@@ -1,0 +1,225 @@
+@tailwind base;
+
+@custom-variant dark (&:is(.dark *));
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 215 20.2% 65.1%;
+    --radius: 0.5rem;
+
+    /* Sidebar variables */
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 220 6% 10%; /* Changed from 224 71% 4% to gray */
+    --foreground: 213 31% 91%;
+    --muted: 220 6% 15%; /* Changed from 223 47% 11% to gray */
+    --muted-foreground: 215.4 16.3% 56.9%;
+    --accent: 217.2 32.6% 17.5%; /* Improved contrast in dark mode */
+    --accent-foreground: 210 40% 98%; /* Ensuring good contrast ratio */
+    --popover: 220 6% 10%; /* Changed from 224 71% 4% to gray */
+    --popover-foreground: 215 20.2% 65.1%;
+    --border: 220 6% 18%; /* Changed from 216 34% 17% to gray */
+    --input: 220 6% 18%; /* Changed from 216 34% 17% to gray */
+    --card: 220 6% 10%; /* Changed from 224 71% 4% to gray */
+    --card-foreground: 213 31% 91%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 1.2%;
+    --secondary: 222.2 47.4% 11.2%;
+    --secondary-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 220 6% 20%; /* Changed from 216 34% 17% to gray */
+
+    /* Dark sidebar variables */
+    --sidebar: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217.2 32.6% 17.5%; /* Improved contrast in dark mode */
+    --sidebar-accent-foreground: 240 5.3% 95.9%; /* Ensuring good contrast ratio */
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* 自定义滚动条样式 - 真正的悬浮效果 */
+@layer utilities {
+  /* WebKit浏览器自定义滚动条 - 真正的悬浮效果 */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px; /* 稍微宽一点以便悬停 */
+    height: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0; /* 移除边距，不占据空间 */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.15); /* 更低的初始透明度 */
+    border-radius: 5px;
+    border: 3px solid transparent; /* 更大的透明边框实现悬浮效果 */
+    background-clip: content-box; /* 关键：背景只应用于内容区域 */
+    transition: all 0.3s ease;
+    opacity: 0; /* 初始完全透明 */
+  }
+
+  /* 滚动时显示滚动条 */
+  .custom-scrollbar:hover::-webkit-scrollbar-thumb,
+  .custom-scrollbar:active::-webkit-scrollbar-thumb,
+  .custom-scrollbar:focus::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.4);
+    border: 2px solid transparent; /* 悬停时边框变小 */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: rgba(100, 116, 139, 0.6);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox浏览器自定义滚动条 */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.15) transparent;
+  }
+
+  /* Firefox悬停效果 */
+  .custom-scrollbar:hover {
+    scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+  }
+
+  /* 暗色模式下的滚动条 */
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.15);
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.4);
+  }
+
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:active {
+    background: rgba(148, 163, 184, 0.6);
+  }
+
+  .dark .custom-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+  }
+
+  .dark .custom-scrollbar:hover {
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
+  /* 侧边栏专用滚动条样式 - 超细悬浮条 */
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.1);
+    border-radius: 4px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    transition: all 0.3s ease;
+    opacity: 0;
+  }
+
+  .sidebar-scrollbar:hover::-webkit-scrollbar-thumb,
+  .sidebar-scrollbar:active::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.3);
+    border: 2px solid transparent;
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.1);
+  }
+
+  .dark .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.3);
+  }
+
+  .sidebar-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.1) transparent;
+  }
+
+  .sidebar-scrollbar:hover {
+    scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+  }
+
+  .dark .sidebar-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.1) transparent;
+  }
+
+  .dark .sidebar-scrollbar:hover {
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  }
+
+  /* 强制滚动条覆盖在内容之上 */
+  .custom-scrollbar,
+  .sidebar-scrollbar {
+    overflow: overlay !important; /* 使用overlay而不是auto，让滚动条悬浮 */
+  }
+
+  /* 为不支持overlay的浏览器提供回退 */
+  @supports not (overflow: overlay) {
+    .custom-scrollbar,
+    .sidebar-scrollbar {
+      overflow: auto;
+      padding-right: 0 !important; /* 确保没有内边距 */
+    }
+  }
+}

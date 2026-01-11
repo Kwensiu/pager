@@ -1,0 +1,90 @@
+{
+  "primaryGroups": [
+    {
+      "id": "default-dev",
+      "name": "开发",
+      "secondaryGroups": [
+        {
+          "id": "default-ai",
+          "name": "AI工具",
+          "websites": [
+            {
+              "id": "chatgpt",
+              "name": "ChatGPT",
+              "url": "https://chat.openai.com"
+            },
+            {
+              "id": "claude",
+              "name": "Claude",
+              "url": "https://claude.ai"
+            },
+            {
+              "id": "deepseek",
+              "name": "DeepSeek",
+              "url": "https://chat.deepseek.com"
+            }
+          ]
+        },
+        {
+          "id": "default-code",
+          "name": "代码托管",
+          "websites": [
+            {
+              "id": "github",
+              "name": "GitHub",
+              "url": "https://github.com"
+            },
+            {
+              "id": "gitlab",
+              "name": "GitLab",
+              "url": "https://gitlab.com"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "default-social",
+      "name": "娱乐",
+      "secondaryGroups": [
+        {
+          "id": "default-messaging",
+          "name": "即时通讯",
+          "websites": [
+            {
+              "id": "oopz",
+              "name": "Oopz",
+              "url": "https://web.oopz.cn/"
+            },
+            {
+              "id": "telegram",
+              "name": "Telegram",
+              "url": "https://web.telegram.org"
+            },
+            {
+              "id": "discord",
+              "name": "Discord",
+              "url": "https://discord.com"
+            }
+          ]
+        },
+        {
+          "id": "default-video",
+          "name": "视频平台",
+          "websites": [
+            {
+              "id": "youtube",
+              "name": "YouTube",
+              "url": "https://youtube.com"
+            },
+            {
+              "id": "bilibili",
+              "name": "Bilibili",
+              "url": "https://bilibili.com"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
