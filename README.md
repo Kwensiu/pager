@@ -1,4 +1,4 @@
-# WFactory3 (Pager)
+# Pager
 
 Pager is an Electron application built with React and TypeScript. This application provides a sidebar-based interface for managing and accessing multiple websites in a single application, designed to enhance productivity by organizing web resources in a structured manner.
 
