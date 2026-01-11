@@ -17,10 +17,13 @@ app.whenReady().then(() => {
   })
 
   mainWindow = createWindow()
-  registerIpcHandlers(mainWindow)
+  registerIpcHandlers()
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createWindow()
+    }
+    mainWindow?.show()
   })
 })
 
