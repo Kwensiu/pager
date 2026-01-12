@@ -6,16 +6,20 @@ import {
   SidebarFooter,
   SidebarRail
 } from '@/ui/sidebar'
+import { useSidebar } from '@/ui/sidebar.types'
+import { Settings, ArrowLeft } from 'lucide-react'
 import { useSidebarLogic } from './sidebar/hooks/useSidebarLogic'
 import SidebarHeader from './sidebar/core/SidebarHeader'
 import SidebarContentWithDragDrop from './sidebar/dialogs/SidebarContentWithDragDrop'
 import SidebarSettings from './sidebar/core/SidebarSettings'
 import EditSecondaryGroupDialog from './sidebar/dialogs/EditSecondaryGroupDialog'
+import AddOptionsDialog from './sidebar/dialogs/AddOptionsDialog'
 import { AddGroupDialog } from '@/components/features/AddGroupDialog'
 import { AddWebsiteDialog } from '@/components/features/AddWebsiteDialog'
 import { EditWebsiteDialog } from '@/components/features/EditWebsiteDialog'
 import { ConfirmDialog } from '@/components/features/ConfirmDialog'
 import { Website } from '@/types/website'
+import { useState } from 'react'
 
 interface SidebarLayoutProps {
   children: (currentWebsite: Website | null) => React.ReactNode
@@ -23,11 +27,37 @@ interface SidebarLayoutProps {
   onWebsiteClick?: (website: Website) => void
 }
 
-export default function SidebarLayout({
+// 内部组件，在 SidebarProvider 内部使用
+interface SidebarLayoutInnerProps {
+  children: (currentWebsite: Website | null) => React.ReactNode
+  activeWebsiteId?: string | null
+  onWebsiteClick?: (website: Website) => void
+}
+
+const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
   children,
-  activeWebsiteId = null,
+  activeWebsiteId,
   onWebsiteClick
-}: SidebarLayoutProps): React.ReactElement {
+}) => {
+  // AddOptionsDialog 状态
+  const [isAddOptionsDialogOpen, setIsAddOptionsDialogOpen] = useState(false)
+  const [addOptionsPrimaryGroupId, setAddOptionsPrimaryGroupId] = useState<string | null>(null)
+
+  // 折叠态显示模式 - 从 localStorage 读取
+  const getCollapsedSidebarMode = (): 'all' | 'expanded' => {
+    const savedSettings = localStorage.getItem('settings')
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings)
+      return parsed.collapsedSidebarMode || 'all'
+    }
+    return 'all'
+  }
+  const collapsedSidebarMode = getCollapsedSidebarMode()
+
+  // 获取sidebar状态
+  const { state } = useSidebar()
+  const isCollapsed = state === 'collapsed'
+
   const {
     // 状态
     primaryGroups,
@@ -96,13 +126,15 @@ export default function SidebarLayout({
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
-        <Sidebar collapsible="none" className="h-full border-r">
+        <Sidebar
+          collapsible="icon"
+          className="h-full border-r [&_[data-sidebar=rail]]:!hidden will-change-[width] contain-[layout]"
+        >
           <SidebarHeader
             primaryGroups={primaryGroups}
             activePrimaryGroup={activePrimaryGroup}
             onSwitchPrimaryGroup={switchPrimaryGroup}
             onAddPrimaryGroup={handleAddPrimaryGroup}
-            onAddSecondaryGroup={handleAddSecondaryGroup}
           />
           <UISidebarContent className="h-full overflow-y-auto sidebar-scrollbar custom-scrollbar">
             <SidebarContentWithDragDrop
@@ -121,29 +153,28 @@ export default function SidebarLayout({
                 // 使用updatePrimaryGroups函数更新状态和存储
                 updatePrimaryGroups(updatedGroups)
               }}
+              onOpenAddOptionsDialog={(primaryGroupId) => {
+                setAddOptionsPrimaryGroupId(primaryGroupId)
+                setIsAddOptionsDialogOpen(true)
+              }}
+              collapsedSidebarMode={collapsedSidebarMode}
             />
           </UISidebarContent>
-          <SidebarFooter className="mt-auto border-t p-2">
+          <SidebarFooter className={`mt-auto border-t ${isCollapsed ? 'p-1' : 'p-2'}`}>
             <div className="flex flex-col gap-2">
               <button
-                className="w-full justify-start px-3 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground"
+                className={`w-full justify-start text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground ${
+                  isCollapsed ? 'justify-center px-1 py-2 pl-[9px]' : 'px-3 py-2'
+                }`}
                 onClick={() => setShowSettings(!showSettings)}
               >
                 <span className="flex items-center">
-                  <svg
-                    className="mr-2 h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  {showSettings ? '返回' : '设置'}
+                  {showSettings ? (
+                    <ArrowLeft className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                  ) : (
+                    <Settings className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                  )}
+                  {!isCollapsed && <span className="ml-2">{showSettings ? '返回' : '设置'}</span>}
                 </span>
               </button>
             </div>
@@ -199,7 +230,7 @@ export default function SidebarLayout({
               groupType={dialogMode === 'website' ? 'secondary' : dialogMode}
             />
           </SidebarFooter>
-          <SidebarRail />
+          {!isCollapsed && <SidebarRail />}
         </Sidebar>
         <SidebarInset className="h-screen w-full">
           <div className="flex flex-1 flex-col overflow-hidden relative h-full">
@@ -245,6 +276,22 @@ export default function SidebarLayout({
         onOpenChange={setIsEditDialogOpen}
         website={editingWebsite}
         onSave={handleSaveWebsite}
+      />
+
+      {/* 添加选项对话框 */}
+      <AddOptionsDialog
+        open={isAddOptionsDialogOpen}
+        onOpenChange={setIsAddOptionsDialogOpen}
+        onAddSecondaryGroup={() => {
+          if (addOptionsPrimaryGroupId) {
+            handleAddSecondaryGroup(addOptionsPrimaryGroupId)
+          }
+        }}
+        onAddWebsite={() => {
+          if (addOptionsPrimaryGroupId) {
+            handleAddWebsite(addOptionsPrimaryGroupId, false)
+          }
+        }}
       />
 
       {/* 编辑二级分组对话框 */}
@@ -353,6 +400,20 @@ export default function SidebarLayout({
         }}
         onCancel={() => setClearCacheDialogOpen(false)}
       />
+    </SidebarProvider>
+  )
+}
+
+export default function SidebarLayout({
+  children,
+  activeWebsiteId = null,
+  onWebsiteClick
+}: SidebarLayoutProps): React.ReactElement {
+  return (
+    <SidebarProvider>
+      <SidebarLayoutInner activeWebsiteId={activeWebsiteId} onWebsiteClick={onWebsiteClick}>
+        {children}
+      </SidebarLayoutInner>
     </SidebarProvider>
   )
 }

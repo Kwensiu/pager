@@ -29,6 +29,8 @@ interface SortableSecondaryGroupProps {
   activeWebsiteId?: string | null
   /** 自定义类名 */
   className?: string
+  /** 是否折叠状态 */
+  isCollapsed?: boolean
 }
 
 export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
@@ -42,7 +44,8 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
   onWebsiteDelete,
   onAddWebsite,
   activeWebsiteId = null,
-  className = ''
+  className = '',
+  isCollapsed = false
 }) => {
   const { attributes, listeners, setNodeRef, style, dragHandleStyle, isDragging, isOver } =
     useSecondaryGroupDnd({
@@ -76,12 +79,13 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
         sortable-secondary-group
         relative
         rounded-lg
-        border
         transition-all
         duration-200
+        ${!isCollapsed ? 'border' : ''}
         ${active ? 'border-primary/50 bg-primary/5' : 'border-border hover:border-primary/30'}
         ${isDragging ? 'shadow-lg opacity-50' : ''}
         ${isOver && !isDragging ? 'border-primary/40 bg-primary/5' : ''}
+        ${isCollapsed ? 'my-1' : ''}
         ${className}
       `}
       onContextMenu={handleContextMenu}
@@ -96,47 +100,72 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
       )}
 
       {/* 分组头部 */}
-      <div className="flex items-center p-3">
-        {/* 拖拽手柄 */}
-        <div
-          className="mr-2"
-          style={dragHandleStyle}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          role="button"
-          aria-label="拖拽分组"
-          tabIndex={0}
-        >
-          <DragHandle isDragging={isDragging} disabled={disabled} />
-        </div>
+      <div
+        className={`flex items-center ${isCollapsed ? 'justify-center p-1.5 cursor-pointer hover:bg-accent/50' : 'p-3'}`}
+        onClick={isCollapsed ? handleGroupClick : undefined}
+        role={isCollapsed ? 'button' : undefined}
+        tabIndex={isCollapsed ? 0 : undefined}
+        onKeyDown={(e) => {
+          if (isCollapsed && (e.key === 'Enter' || e.key === ' ')) {
+            handleGroupClick()
+            e.preventDefault()
+          }
+        }}
+      >
+        {/* 拖拽手柄 - 折叠状态下隐藏 */}
+        {!isCollapsed && (
+          <div
+            className="mr-2"
+            style={dragHandleStyle}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+            role="button"
+            aria-label="拖拽分组"
+            tabIndex={0}
+          >
+            <DragHandle isDragging={isDragging} disabled={disabled} />
+          </div>
+        )}
 
         {/* 文件夹图标 */}
-        <Folder className="mr-2 h-4 w-4 text-muted-foreground" />
+        <Folder className={`${isCollapsed ? '' : 'mr-2'} h-4 w-4 text-muted-foreground`} />
 
-        {/* 分组名称 */}
-        <div
-          className="flex-1 font-medium cursor-pointer"
-          onClick={handleGroupClick}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              handleGroupClick()
-              e.preventDefault()
-            }
-          }}
-        >
-          {secondaryGroup.name}
-        </div>
+        {/* 分组名称 - 折叠状态下显示垂直文字 */}
+        {isCollapsed ? (
+          <span className="text-[10px] font-medium ml-0.5 leading-tight writing-mode-vertical text-center max-h-8 overflow-hidden">
+            {secondaryGroup.name}
+          </span>
+        ) : (
+          <div
+            className="flex-1 font-medium cursor-pointer"
+            onClick={handleGroupClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleGroupClick()
+                e.preventDefault()
+              }
+            }}
+          >
+            {secondaryGroup.name}
+          </div>
+        )}
 
-        {/* 展开/收起图标 */}
-        <button
-          className="ml-2 p-1 rounded hover:bg-accent"
-          onClick={handleGroupClick}
-          aria-label={isExpanded ? '收起分组' : '展开分组'}
-        >
-          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        </button>
+        {/* 展开/收起图标 - 折叠状态下隐藏 */}
+        {!isCollapsed && (
+          <button
+            className="ml-2 p-1 rounded hover:bg-accent"
+            onClick={handleGroupClick}
+            aria-label={isExpanded ? '收起分组' : '展开分组'}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* 网站列表（展开时显示） */}
@@ -152,11 +181,12 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
               onWebsiteEdit={onWebsiteEdit}
               onWebsiteDelete={onWebsiteDelete}
               className="space-y-1"
+              isCollapsed={isCollapsed}
             />
           )}
 
-          {/* 添加网站按钮 - 始终显示（即使分组为空） */}
-          {onAddWebsite && (
+          {/* 添加网站按钮 - 折叠状态下隐藏 */}
+          {onAddWebsite && !isCollapsed && (
             <button
               className={`
                 w-full

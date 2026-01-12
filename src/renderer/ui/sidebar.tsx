@@ -10,34 +10,13 @@ import { Input } from './input'
 import { Separator } from './separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip'
+import { SidebarContext, SidebarContextProps, useSidebar } from './sidebar.types'
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state'
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
-
-type SidebarContextProps = {
-  state: 'expanded' | 'collapsed'
-  open: boolean
-  setOpen: (open: boolean) => void
-  openMobile: boolean
-  setOpenMobile: (open: boolean) => void
-  isMobile: boolean
-  toggleSidebar: () => void
-}
-
-const SidebarContext = React.createContext<SidebarContextProps | null>(null)
-
-function useSidebar(): SidebarContextProps {
-  const context = React.useContext(SidebarContext)
-  if (!context) {
-    throw new Error('useSidebar must be used within a SidebarProvider.')
-  }
-
-  return context
-}
 
 const SidebarProvider = React.forwardRef<
   HTMLDivElement,
@@ -62,7 +41,25 @@ const SidebarProvider = React.forwardRef<
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
 
-    const [_open, _setOpen] = React.useState(defaultOpen)
+    // 从 localStorage 读取初始状态
+    const getInitialOpenState = (): boolean => {
+      // 优先从 localStorage 读取
+      const savedSettings = localStorage.getItem('settings')
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings)
+        if (parsed.sidebarOpen !== undefined) {
+          return parsed.sidebarOpen
+        }
+      }
+      // 回退到 cookie
+      const cookieMatch = document.cookie.match(new RegExp(`(^| )${SIDEBAR_COOKIE_NAME}=([^;]+)`))
+      if (cookieMatch) {
+        return cookieMatch[2] === 'true'
+      }
+      return defaultOpen
+    }
+
+    const [_open, _setOpen] = React.useState(getInitialOpenState)
     const open = openProp ?? _open
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
@@ -73,7 +70,17 @@ const SidebarProvider = React.forwardRef<
           _setOpen(openState)
         }
 
-        document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+        // 保存到 localStorage
+        const savedSettings = localStorage.getItem('settings')
+        let settings = {}
+        if (savedSettings) {
+          settings = JSON.parse(savedSettings)
+        }
+        const updatedSettings = {
+          ...settings,
+          sidebarOpen: openState
+        }
+        localStorage.setItem('settings', JSON.stringify(updatedSettings))
       },
       [setOpenProp, open]
     )
@@ -659,6 +666,5 @@ export {
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
-  SidebarTrigger,
-  useSidebar
+  SidebarTrigger
 }

@@ -1,5 +1,6 @@
 import React from 'react'
 import { SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/ui/sidebar'
+import { useSidebar } from '@/ui/sidebar.types'
 import { Plus } from 'lucide-react'
 import { PrimaryGroup, Website, SecondaryGroup } from '@/types/website'
 import {
@@ -33,6 +34,10 @@ export interface SidebarContentWithDragDropProps {
   onGroupsUpdate: (groups: PrimaryGroup[]) => void
   onSecondaryGroupReorder?: (primaryGroupId: string, groups: SecondaryGroup[]) => void
   onWebsiteReorder?: (secondaryGroupId: string, websites: Website[]) => void
+  // 打开添加选项对话框
+  onOpenAddOptionsDialog?: (primaryGroupId: string) => void
+  // 折叠态显示模式
+  collapsedSidebarMode?: 'all' | 'expanded'
 }
 
 // 内部组件，使用拖拽上下文
@@ -46,8 +51,13 @@ const DragDropSidebarContentInner: React.FC<SidebarContentWithDragDropProps> = (
   contextMenuSecondaryGroup,
   activeWebsiteId = null,
   handleWebsiteUpdate,
-  handleDeleteWebsite
+  handleDeleteWebsite,
+  onOpenAddOptionsDialog,
+  collapsedSidebarMode = 'all'
 }) => {
+  const { state } = useSidebar()
+  const isCollapsed = state === 'collapsed'
+
   if (!activePrimaryGroup) {
     return null
   }
@@ -66,85 +76,142 @@ const DragDropSidebarContentInner: React.FC<SidebarContentWithDragDropProps> = (
   return (
     <SidebarGroup key={`primary-group-${activePrimaryGroup.id}`} className="pb-0">
       <SidebarMenu>
-        {/* 一级分类下的网站列表 - 即使为空也渲染，作为拖拽目标 */}
-        <div className="mb-4">
-          <div className="text-xs font-medium text-muted-foreground mb-2">未分组网站</div>
+        {/* 折叠状态下的简化显示 */}
+        {isCollapsed ? (
           <div className="space-y-1">
-            <SortableContainer items={effectivePrimaryGroupWebsiteIds}>
-              {primaryGroupWebsites.map((website) => (
-                <div key={`primary-website-${website.id}`} className="ml-2">
-                  <SortableWebsiteItem
-                    website={website}
-                    primaryGroupId={activePrimaryGroup.id}
-                    active={activeWebsiteId === website.id}
-                    onClick={() => handleWebsiteClick(website)}
-                    onEdit={() => handleWebsiteUpdate(website)}
-                    onDelete={() => handleDeleteWebsite(website.id)}
-                    className="ml-0"
-                  />
+            {/* 一级分类下的网站 */}
+            {primaryGroupWebsites.map((website) => (
+              <div key={`primary-website-${website.id}`}>
+                <SortableWebsiteItem
+                  website={website}
+                  primaryGroupId={activePrimaryGroup.id}
+                  active={activeWebsiteId === website.id}
+                  onClick={() => handleWebsiteClick(website)}
+                  onEdit={() => handleWebsiteUpdate(website)}
+                  onDelete={() => handleDeleteWebsite(website.id)}
+                  className="ml-0"
+                  isCollapsed={isCollapsed}
+                />
+              </div>
+            ))}
+            {/* 二级分组下的网站 */}
+            {sortedSecondaryGroups.map((secondaryGroup) => {
+              // 根据模式决定是否显示该分组的网站
+              const shouldShowWebsites =
+                collapsedSidebarMode === 'all' || secondaryGroup.expanded !== false
+              return (
+                <div key={`collapsed-group-${secondaryGroup.id}`}>
+                  {shouldShowWebsites &&
+                    secondaryGroup.websites.map((website) => (
+                      <div key={`website-${website.id}`}>
+                        <SortableWebsiteItem
+                          website={website}
+                          primaryGroupId={activePrimaryGroup.id}
+                          active={activeWebsiteId === website.id}
+                          onClick={() => handleWebsiteClick(website)}
+                          onEdit={() => handleWebsiteUpdate(website)}
+                          onDelete={() => handleDeleteWebsite(website.id)}
+                          className="ml-0"
+                          isCollapsed={isCollapsed}
+                        />
+                      </div>
+                    ))}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <>
+            {/* 展开状态下的完整显示 */}
+            {/* 一级分类下的网站列表 - 即使为空也渲染，作为拖拽目标 */}
+            <div className="mb-4">
+              <div className="text-xs font-medium text-muted-foreground mb-2">未分组网站</div>
+              <div className="space-y-1">
+                <SortableContainer items={effectivePrimaryGroupWebsiteIds}>
+                  {primaryGroupWebsites.map((website) => (
+                    <div key={`primary-website-${website.id}`} className="ml-2">
+                      <SortableWebsiteItem
+                        website={website}
+                        primaryGroupId={activePrimaryGroup.id}
+                        active={activeWebsiteId === website.id}
+                        onClick={() => handleWebsiteClick(website)}
+                        onEdit={() => handleWebsiteUpdate(website)}
+                        onDelete={() => handleDeleteWebsite(website.id)}
+                        className="ml-0"
+                        isCollapsed={isCollapsed}
+                      />
+                    </div>
+                  ))}
+                  {/* 当没有网站时，渲染一个可排序的空占位符作为拖拽目标 */}
+                  {primaryGroupWebsites.length === 0 && (
+                    <div className="">
+                      <SortableEmptyPlaceholder
+                        id="primary-group-empty"
+                        primaryGroupId={activePrimaryGroup.id}
+                        onClick={() => handleAddWebsite(activePrimaryGroup.id, false)}
+                      />
+                    </div>
+                  )}
+                </SortableContainer>
+              </div>
+            </div>
+
+            <SortableContainer items={secondaryGroupIds}>
+              {sortedSecondaryGroups.map((secondaryGroup) => (
+                <div key={`menu-item-${secondaryGroup.id}`} className="relative mb-2">
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <div>
+                        {/* 使用可排序的二级分组组件 */}
+                        <SortableSecondaryGroup
+                          secondaryGroup={secondaryGroup}
+                          active={contextMenuSecondaryGroup === secondaryGroup.id}
+                          onClick={() => toggleSecondaryGroup(secondaryGroup.id)}
+                          onWebsiteClick={handleWebsiteClick}
+                          onWebsiteEdit={handleWebsiteUpdate}
+                          onWebsiteDelete={handleDeleteWebsite}
+                          onAddWebsite={() => handleAddWebsite(secondaryGroup.id, true)}
+                          activeWebsiteId={activeWebsiteId}
+                          isCollapsed={isCollapsed}
+                        />
+                      </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => handleEditSecondaryGroup(secondaryGroup)}>
+                        修改
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        className="text-red-600 focus:bg-red-100 dark:focus:bg-red-900"
+                        onClick={() => handleDeleteSecondaryGroup(secondaryGroup.id)}
+                      >
+                        删除
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 </div>
               ))}
-              {/* 当没有网站时，渲染一个可排序的空占位符作为拖拽目标 */}
-              {primaryGroupWebsites.length === 0 && (
-                <div className="">
-                  <SortableEmptyPlaceholder
-                    id="primary-group-empty"
-                    primaryGroupId={activePrimaryGroup.id}
-                    onClick={() => handleAddWebsite(activePrimaryGroup.id, false)}
-                  />
-                </div>
-              )}
             </SortableContainer>
-          </div>
-        </div>
+          </>
+        )}
 
-        <SortableContainer items={secondaryGroupIds}>
-          {sortedSecondaryGroups.map((secondaryGroup) => (
-            <div key={`menu-item-${secondaryGroup.id}`} className="relative mb-2">
-              <ContextMenu>
-                <ContextMenuTrigger asChild>
-                  <div>
-                    {/* 使用可排序的二级分组组件 */}
-                    <SortableSecondaryGroup
-                      secondaryGroup={secondaryGroup}
-                      active={contextMenuSecondaryGroup === secondaryGroup.id}
-                      onClick={() => toggleSecondaryGroup(secondaryGroup.id)}
-                      onWebsiteClick={handleWebsiteClick}
-                      onWebsiteEdit={handleWebsiteUpdate}
-                      onWebsiteDelete={handleDeleteWebsite}
-                      onAddWebsite={() => handleAddWebsite(secondaryGroup.id, true)}
-                      activeWebsiteId={activeWebsiteId}
-                    />
-                  </div>
-                </ContextMenuTrigger>
-                <ContextMenuContent>
-                  <ContextMenuItem onClick={() => handleEditSecondaryGroup(secondaryGroup)}>
-                    修改
-                  </ContextMenuItem>
-                  <ContextMenuItem
-                    className="text-red-600 focus:bg-red-100 dark:focus:bg-red-900"
-                    onClick={() => handleDeleteSecondaryGroup(secondaryGroup.id)}
-                  >
-                    删除
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            </div>
-          ))}
-        </SortableContainer>
-
-        {/* 添加网站到主要分组的按钮 */}
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            onClick={(e) => {
-              e.stopPropagation()
-              handleAddWebsite(activePrimaryGroup.id, false)
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            <span>为此分类添加网站</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+        {/* 添加网站到主要分组的按钮 - 折叠状态下隐藏 */}
+        {!isCollapsed && (
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onOpenAddOptionsDialog) {
+                  onOpenAddOptionsDialog(activePrimaryGroup.id)
+                } else {
+                  handleAddWebsite(activePrimaryGroup.id, false)
+                }
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span>为此分类添加网站</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )}
       </SidebarMenu>
     </SidebarGroup>
   )

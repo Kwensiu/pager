@@ -6,9 +6,21 @@ Pager use [Shadcn UI](https://ui.shadcn.com/docs) and [Radix UI](https://www.rad
 
 Important:​ Use yarn for all operations (do not use npm).
 
+If user ask you to write a commit to github, make sure the commit write in english, and same format like the old commits
+
+```
+git log --oneline -5
+```
+
 Available Commands:
 
 Used in `Powershell`
+
+If try to delete files, using the correct PowerShell syntax.
+
+```powershell
+$ del
+```
 
 # Install dependencies
 

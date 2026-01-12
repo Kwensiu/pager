@@ -32,6 +32,8 @@ interface SortableWebsiteItemProps {
   className?: string
   /** 是否显示拖拽手柄 */
   showDragHandle?: boolean
+  /** 是否折叠状态 */
+  isCollapsed?: boolean
 }
 
 const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
@@ -44,7 +46,8 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
   onEdit,
   onDelete,
   className = '',
-  showDragHandle = true
+  showDragHandle = true,
+  isCollapsed = false
 }) => {
   const {
     attributes,
@@ -92,7 +95,7 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
             relative
             flex
             items-center
-            px-2
+            ${isCollapsed ? 'justify-center px-0' : 'px-2'}
             py-1.5
             rounded-md
             transition-all
@@ -124,8 +127,8 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
             />
           )}
 
-          {/* 拖拽手柄 */}
-          {showDragHandle && !disabled && (
+          {/* 拖拽手柄 - 折叠状态下隐藏 */}
+          {showDragHandle && !disabled && !isCollapsed && (
             <div
               className="mr-1.5"
               style={dragHandleStyle}
@@ -145,19 +148,21 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
           )}
 
           {/* 网站图标 */}
-          <div className="mr-2 flex-shrink-0">
+          <div className={`${isCollapsed ? '' : 'mr-2'} flex-shrink-0`}>
             <Favicon url={website.url} className="h-6 w-6" />
           </div>
 
-          {/* 网站名称 */}
-          <div className="flex-1 min-w-0">
-            <span className="text-sm truncate block">{website.name}</span>
-            {website.description && (
-              <span className="text-xs text-muted-foreground truncate block">
-                {website.description}
-              </span>
-            )}
-          </div>
+          {/* 网站名称 - 折叠状态下隐藏 */}
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <span className="text-sm truncate block">{website.name}</span>
+              {website.description && (
+                <span className="text-xs text-muted-foreground truncate block">
+                  {website.description}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* 拖拽时的覆盖层效果 */}
           {isDragging && (
@@ -240,6 +245,8 @@ interface SortableWebsiteListProps {
   onWebsiteDelete?: (websiteId: string) => void
   /** 自定义类名 */
   className?: string
+  /** 是否折叠状态 */
+  isCollapsed?: boolean
 }
 
 export const SortableWebsiteList: React.FC<SortableWebsiteListProps> = ({
@@ -251,7 +258,8 @@ export const SortableWebsiteList: React.FC<SortableWebsiteListProps> = ({
   onWebsiteClick,
   onWebsiteEdit,
   onWebsiteDelete,
-  className = ''
+  className = '',
+  isCollapsed = false
 }) => {
   // 按order字段排序
   const sortedWebsites = [...websites].sort((a, b) => a.order - b.order)
@@ -270,6 +278,7 @@ export const SortableWebsiteList: React.FC<SortableWebsiteListProps> = ({
           onEdit={onWebsiteEdit}
           onDelete={onWebsiteDelete}
           showDragHandle={true} // 修复：二级分组内的网站按钮应该显示拖拽手柄
+          isCollapsed={isCollapsed}
         />
       ))}
     </div>

@@ -31,6 +31,7 @@ export default function SidebarSettings({
     saveSession: boolean
     enableJavaScript: boolean
     allowPopups: boolean
+    collapsedSidebarMode: 'all' | 'expanded'
   } => {
     const savedSettings = localStorage.getItem('settings')
     if (savedSettings) {
@@ -41,7 +42,8 @@ export default function SidebarSettings({
         clearCacheOnExit: parsed.clearCacheOnExit || false,
         saveSession: parsed.saveSession !== undefined ? parsed.saveSession : true,
         enableJavaScript: parsed.enableJavaScript !== undefined ? parsed.enableJavaScript : true,
-        allowPopups: parsed.allowPopups !== undefined ? parsed.allowPopups : true
+        allowPopups: parsed.allowPopups !== undefined ? parsed.allowPopups : true,
+        collapsedSidebarMode: parsed.collapsedSidebarMode || 'all'
       }
     }
     return {
@@ -50,7 +52,8 @@ export default function SidebarSettings({
       clearCacheOnExit: false,
       saveSession: true,
       enableJavaScript: true,
-      allowPopups: true
+      allowPopups: true,
+      collapsedSidebarMode: 'all'
     }
   }
 
@@ -61,6 +64,9 @@ export default function SidebarSettings({
   const [saveSession, setSaveSession] = useState(initialSettings.saveSession)
   const [enableJavaScript, setEnableJavaScript] = useState(initialSettings.enableJavaScript)
   const [allowPopups, setAllowPopups] = useState(initialSettings.allowPopups)
+  const [collapsedSidebarMode, setCollapsedSidebarMode] = useState<'all' | 'expanded'>(
+    initialSettings.collapsedSidebarMode
+  )
 
   // 应用主题和保存设置到localStorage
   useEffect(() => {
@@ -87,11 +93,20 @@ export default function SidebarSettings({
       clearCacheOnExit,
       saveSession,
       enableJavaScript,
-      allowPopups
+      allowPopups,
+      collapsedSidebarMode
     }
 
     localStorage.setItem('settings', JSON.stringify(updatedSettings))
-  }, [theme, language, clearCacheOnExit, saveSession, enableJavaScript, allowPopups])
+  }, [
+    theme,
+    language,
+    clearCacheOnExit,
+    saveSession,
+    enableJavaScript,
+    allowPopups,
+    collapsedSidebarMode
+  ])
 
   // 处理语言更改
   const handleLanguageChange = async (newLanguage: string): Promise<void> => {
@@ -125,6 +140,7 @@ export default function SidebarSettings({
     setAllowPopups(true)
     setTheme('system')
     setLanguage('zh')
+    setCollapsedSidebarMode('all')
   }
 
   return (
@@ -214,6 +230,37 @@ export default function SidebarSettings({
                   </SelectItem>
                   <SelectItem value="en" className="dark:text-foreground dark:focus:bg-gray-700">
                     {t('settings.english')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-foreground">{t('settings.collapsedSidebarMode')}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.collapsedSidebarModeDescription')}
+                </p>
+              </div>
+              <Select
+                value={collapsedSidebarMode}
+                onValueChange={(value: 'all' | 'expanded') => setCollapsedSidebarMode(value)}
+              >
+                <SelectTrigger className="w-40 dark:border-gray-600 dark:bg-gray-800 dark:text-foreground">
+                  <SelectValue
+                    placeholder={t('settings.collapsedSidebarMode')}
+                    className="dark:text-foreground"
+                  />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-gray-800 dark:border-gray-600 dark:text-foreground">
+                  <SelectItem value="all" className="dark:text-foreground dark:focus:bg-gray-700">
+                    {t('settings.collapsedSidebarModeAll')}
+                  </SelectItem>
+                  <SelectItem
+                    value="expanded"
+                    className="dark:text-foreground dark:focus:bg-gray-700"
+                  >
+                    {t('settings.collapsedSidebarModeExpanded')}
                   </SelectItem>
                 </SelectContent>
               </Select>
