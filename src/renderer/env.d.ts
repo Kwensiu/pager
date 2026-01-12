@@ -8,6 +8,7 @@ declare global {
         HTMLWebViewElement
       >
     }
+    interface Element extends React.ReactElement {}
   }
 }
 

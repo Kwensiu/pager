@@ -20,27 +20,20 @@ interface WebViewElement extends HTMLWebViewElement {
 // 扩展 HTMLWebViewElement 接口以包含 Electron 特定属性
 declare global {
   interface HTMLWebViewElement {
-    allowpopups: boolean
-    partition: string
+    allowpopups?: string
+    partition?: string
   }
 }
 
 export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps>(
   ({ url, isLoading, onRefresh, onGoBack, onGoForward, onOpenExternal }, ref) => {
     const webviewRef = useRef<WebViewElement>(null)
+
+    // 创建唯一标识符，基于 URL 的主机名
     const partition = useMemo(() => `persist:webview-${new URL(url).hostname}`, [url])
 
-    const webviewCallbackRef = useCallback(
-      (element: WebViewElement | null) => {
-        if (element) {
-          // 设置 webview 属性
-          element.allowpopups = true
-          element.partition = partition
-          webviewRef.current = element
-        }
-      },
-      [partition]
-    )
+    // 使用 URL 作为 key 的一部分，确保 URL 变化时重新创建 webview
+    const webviewKey = useMemo(() => `${partition}-${url}`, [partition, url])
 
     useEffect(() => {
       const webview = webviewRef.current
@@ -172,6 +165,13 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
       }
     }, [url])
 
+    // 仅保存 webview 引用
+    const webviewCallbackRef = useCallback((element: WebViewElement | null) => {
+      if (element) {
+        webviewRef.current = element
+      }
+    }, [])
+
     return (
       <div ref={ref} className="flex h-full w-full flex-col">
         {/* 工具栏 - 调整高度以匹配SidebarHeader */}
@@ -220,9 +220,15 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
         {/* 内容区域 - 修复顶部溢出问题 */}
         <div className="flex-1 relative overflow-hidden">
           <webview
+            key={webviewKey}
             ref={webviewCallbackRef}
             src={url}
             style={{ width: '100%', height: '100%', border: 'none' }}
+            // eslint-disable-next-line react/no-unknown-property
+            // @ts-ignore - allowpopups is a boolean attribute but DOM expects string
+            allowpopups={true.toString()}
+            // eslint-disable-next-line react/no-unknown-property
+            partition={partition}
           />
         </div>
       </div>
