@@ -13,13 +13,15 @@ Pager is an Electron application built with React and TypeScript. This applicati
 ### Install
 
 ```bash
-$ yarn
+$ yarn install
 ```
 
 ### Development
 
 ```bash
 $ yarn dev
+
+$ yarn format
 ```
 
 ### Build
