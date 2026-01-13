@@ -107,5 +107,161 @@ export const api = {
     getSettings: () => ipcRenderer.invoke('extension:getSettings'),
     updateSettings: (settings: { enableExtensions?: boolean; autoLoadExtensions?: boolean }) =>
       ipcRenderer.invoke('extension:updateSettings', settings)
+  },
+
+  // ===== 增强功能 API =====
+  enhanced: {
+    // 浏览器指纹伪装
+    fingerprint: {
+      generate: (options?: Record<string, unknown>) =>
+        ipcRenderer.invoke('fingerprint:generate', options),
+      applyToWebsite: (websiteId: string) =>
+        ipcRenderer.invoke('fingerprint:apply-to-website', websiteId),
+      clear: (websiteId: string) => ipcRenderer.invoke('fingerprint:clear', websiteId),
+      refresh: (options?: Record<string, unknown>) =>
+        ipcRenderer.invoke('fingerprint:refresh', options),
+      clearCache: () => ipcRenderer.invoke('fingerprint:clear-cache'),
+      getCacheStats: () => ipcRenderer.invoke('fingerprint:get-cache-stats')
+    },
+
+    // 全局快捷键
+    shortcut: {
+      register: (shortcut: string, action: string) =>
+        ipcRenderer.invoke('shortcut:register', shortcut, action),
+      unregister: (shortcut: string) => ipcRenderer.invoke('shortcut:unregister', shortcut),
+      getAll: () => ipcRenderer.invoke('shortcut:get-all'),
+      enableAll: () => ipcRenderer.invoke('shortcut:enable-all'),
+      disableAll: () => ipcRenderer.invoke('shortcut:disable-all')
+    },
+
+    // 系统托盘
+    tray: {
+      create: (options?: Record<string, unknown>) => ipcRenderer.invoke('tray:create', options),
+      destroy: () => ipcRenderer.invoke('tray:destroy'),
+      setTooltip: (tooltip: string) => ipcRenderer.invoke('tray:set-tooltip', tooltip),
+      setContextMenu: (menuItems: unknown[]) =>
+        ipcRenderer.invoke('tray:set-context-menu', menuItems)
+    },
+
+    // 窗口边缘吸附
+    windowAdsorption: {
+      enable: () => ipcRenderer.invoke('window-adsorption:enable'),
+      disable: () => ipcRenderer.invoke('window-adsorption:disable'),
+      isEnabled: () => ipcRenderer.invoke('window-adsorption:is-enabled'),
+      setSensitivity: (sensitivity: number) =>
+        ipcRenderer.invoke('window-adsorption:set-sensitivity', sensitivity)
+    },
+
+    // 内存优化
+    memoryOptimizer: {
+      start: () => ipcRenderer.invoke('memory-optimizer:start'),
+      stop: () => ipcRenderer.invoke('memory-optimizer:stop'),
+      cleanInactive: () => ipcRenderer.invoke('memory-optimizer:clean-inactive'),
+      getStats: () => ipcRenderer.invoke('memory-optimizer:get-stats')
+    },
+
+    // 数据同步
+    dataSync: {
+      exportConfig: (options?: Record<string, unknown>) =>
+        ipcRenderer.invoke('data-sync:export-config', options),
+      importConfig: (filePath: string) => ipcRenderer.invoke('data-sync:import-config', filePath),
+      exportCookies: (websiteId?: string) =>
+        ipcRenderer.invoke('data-sync:export-cookies', websiteId),
+      importCookies: (filePath: string, websiteId?: string) =>
+        ipcRenderer.invoke('data-sync:import-cookies', filePath, websiteId)
+    },
+
+    // 自动启动
+    autoLaunch: {
+      enable: (args?: string[]) => ipcRenderer.invoke('auto-launch:enable', args),
+      disable: () => ipcRenderer.invoke('auto-launch:disable'),
+      isEnabled: () => ipcRenderer.invoke('auto-launch:is-enabled'),
+      toggle: () => ipcRenderer.invoke('auto-launch:toggle'),
+      getSettings: () => ipcRenderer.invoke('auto-launch:get-settings'),
+      setHidden: (hidden: boolean) => ipcRenderer.invoke('auto-launch:set-hidden', hidden),
+      setArgs: (args: string[]) => ipcRenderer.invoke('auto-launch:set-args', args),
+      wasLaunchedAtLogin: () => ipcRenderer.invoke('auto-launch:was-launched-at-login'),
+      wasLaunchedAsHidden: () => ipcRenderer.invoke('auto-launch:was-launched-as-hidden'),
+      getSupportedSettings: () => ipcRenderer.invoke('auto-launch:get-supported-settings'),
+      validateArgs: (args: string[]) => ipcRenderer.invoke('auto-launch:validate-args', args),
+      getDefaultArgs: () => ipcRenderer.invoke('auto-launch:get-default-args'),
+      getStatusReport: () => ipcRenderer.invoke('auto-launch:get-status-report'),
+      getEnvironmentInfo: () => ipcRenderer.invoke('auto-launch:get-environment-info')
+    },
+
+    // JS 代码注入
+    jsInjector: {
+      inject: (websiteId: string, code: string) =>
+        ipcRenderer.invoke('js-injector:inject', websiteId, code),
+      remove: (websiteId: string, injectionId: string) =>
+        ipcRenderer.invoke('js-injector:remove', websiteId, injectionId),
+      getAll: (websiteId: string) => ipcRenderer.invoke('js-injector:get-all', websiteId)
+    },
+
+    // 代理支持
+    proxy: {
+      setForWebsite: (websiteId: string, proxyRules: string) =>
+        ipcRenderer.invoke('proxy:set-for-website', websiteId, proxyRules),
+      clearForWebsite: (websiteId: string) =>
+        ipcRenderer.invoke('proxy:clear-for-website', websiteId),
+      testConnection: (proxyRules: string, testUrl?: string) =>
+        ipcRenderer.invoke('proxy:test-connection', proxyRules, testUrl)
+    },
+
+    // 系统主题切换
+    theme: {
+      set: (theme: 'light' | 'dark' | 'system') => ipcRenderer.invoke('theme:set', theme),
+      getCurrent: () => ipcRenderer.invoke('theme:get-current'),
+      toggle: () => ipcRenderer.invoke('theme:toggle')
+    },
+
+    // 窗口管理
+    windowManager: {
+      toggleAlwaysOnTop: () => ipcRenderer.invoke('window-manager:toggle-always-on-top'),
+      toggleMiniMode: () => ipcRenderer.invoke('window-manager:toggle-mini-mode'),
+      snapToEdge: (edge: 'left' | 'right' | 'top' | 'bottom') =>
+        ipcRenderer.invoke('window-manager:snap-to-edge', edge),
+      getState: () => ipcRenderer.invoke('window-manager:get-state')
+    },
+
+    // 扩展增强
+    extensionEnhancer: {
+      register: (extension: Record<string, unknown>) =>
+        ipcRenderer.invoke('extension-enhancer:register', extension),
+      enable: (extensionId: string) => ipcRenderer.invoke('extension-enhancer:enable', extensionId),
+      disable: (extensionId: string) =>
+        ipcRenderer.invoke('extension-enhancer:disable', extensionId),
+      getStats: () => ipcRenderer.invoke('extension-enhancer:get-stats')
+    },
+
+    // 版本检查
+    versionChecker: {
+      checkUpdate: (force?: boolean) => ipcRenderer.invoke('version-checker:check-update', force),
+      downloadUpdate: () => ipcRenderer.invoke('version-checker:download-update'),
+      installUpdate: () => ipcRenderer.invoke('version-checker:install-update'),
+      getVersionInfo: () => ipcRenderer.invoke('version-checker:get-version-info')
+    },
+
+    // Session 隔离
+    sessionIsolation: {
+      create: (websiteId: string) => ipcRenderer.invoke('session-isolation:create', websiteId),
+      clear: (websiteId: string) => ipcRenderer.invoke('session-isolation:clear', websiteId),
+      exportCookies: (websiteId: string) =>
+        ipcRenderer.invoke('session-isolation:export-cookies', websiteId),
+      importCookies: (websiteId: string, cookies: unknown[]) =>
+        ipcRenderer.invoke('session-isolation:import-cookies', websiteId, cookies)
+    },
+
+    // 进程崩溃处理
+    crashHandler: {
+      getStats: () => ipcRenderer.invoke('crash-handler:get-stats'),
+      clearReports: () => ipcRenderer.invoke('crash-handler:clear-reports'),
+      sendReport: (reportId: string) => ipcRenderer.invoke('crash-handler:send-report', reportId)
+    },
+
+    // 通用功能
+    getAllFeatures: () => ipcRenderer.invoke('enhanced:get-all-features'),
+    enableAll: () => ipcRenderer.invoke('enhanced:enable-all'),
+    disableAll: () => ipcRenderer.invoke('enhanced:disable-all')
   }
 }

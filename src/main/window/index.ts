@@ -1,6 +1,66 @@
 import { join } from 'path'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { app, BrowserWindow, shell } from 'electron'
+
+interface WindowState {
+  width: number
+  height: number
+  x: number | null
+  y: number | null
+  maximized: boolean
+}
+
+/**
+ * 获取窗口状态文件路径
+ */
+function getWindowStateFilePath(): string {
+  const userDataPath = app.getPath('userData')
+  return join(userDataPath, 'window-state.json')
+}
+
+/**
+ * 获取保存的窗口状态
+ */
+function getSavedWindowState(): WindowState | null {
+  try {
+    const filePath = getWindowStateFilePath()
+    if (existsSync(filePath)) {
+      const savedState = readFileSync(filePath, 'utf-8')
+      return JSON.parse(savedState)
+    }
+  } catch (error) {
+    console.error('Failed to load window state:', error)
+  }
+  return null
+}
+
+/**
+ * 保存窗口状态
+ */
+function saveWindowState(window: BrowserWindow): void {
+  try {
+    const bounds = window.getBounds()
+    const state: WindowState = {
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+      maximized: window.isMaximized()
+    }
+
+    const filePath = getWindowStateFilePath()
+    const userDataPath = app.getPath('userData')
+
+    // 确保目录存在
+    if (!existsSync(userDataPath)) {
+      mkdirSync(userDataPath, { recursive: true })
+    }
+
+    writeFileSync(filePath, JSON.stringify(state), 'utf-8')
+  } catch (error) {
+    console.error('Failed to save window state:', error)
+  }
+}
 
 function getIconPath(): string | undefined {
   // 将 app.getAppPath() 移到函数内部，避免在模块加载时访问 app
@@ -24,9 +84,14 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
   const icon = getIconPath()
   console.log('Creating window with icon:', icon)
 
+  // 获取保存的窗口状态
+  const savedState = getSavedWindowState()
+
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: savedState?.width || 900,
+    height: savedState?.height || 670,
+    x: savedState?.x ?? undefined,
+    y: savedState?.y ?? undefined,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -42,6 +107,11 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
     }
   })
 
+  // 如果之前是最大化状态，恢复最大化
+  if (savedState?.maximized) {
+    mainWindow.maximize()
+  }
+
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
   })
@@ -49,6 +119,23 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
   mainWindow.on('resize', () => {
     // 通知渲染进程窗口大小变化
     mainWindow.webContents.send('window-resized')
+    // 保存窗口状态
+    saveWindowState(mainWindow)
+  })
+
+  mainWindow.on('move', () => {
+    // 保存窗口状态
+    saveWindowState(mainWindow)
+  })
+
+  mainWindow.on('maximize', () => {
+    // 保存窗口状态
+    saveWindowState(mainWindow)
+  })
+
+  mainWindow.on('unmaximize', () => {
+    // 保存窗口状态
+    saveWindowState(mainWindow)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -90,4 +177,19 @@ export function registerCertificateErrorHandler(): void {
       callback(true) // 信任证书，允许继续加载
     }
   )
+}
+
+/**
+ * 注册渲染进程崩溃处理器
+ */
+export function registerRenderProcessGoneHandler(): void {
+  app.on('render-process-gone', (_event, webContents, details) => {
+    if (details.reason === 'crashed') {
+      console.error('渲染进程崩溃:', details)
+      // 自动重新加载页面
+      if (!webContents.isDestroyed()) {
+        webContents.reload()
+      }
+    }
+  })
 }

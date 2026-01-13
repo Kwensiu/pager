@@ -7,17 +7,17 @@ import {
   SidebarRail
 } from '@/ui/sidebar'
 import { useSidebar } from '@/ui/sidebar.types'
-import { Settings, ArrowLeft } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { useSidebarLogic } from './sidebar/hooks/useSidebarLogic'
 import SidebarHeader from './sidebar/core/SidebarHeader'
 import SidebarContentWithDragDrop from './sidebar/dialogs/SidebarContentWithDragDrop'
-import SidebarSettings from './sidebar/core/SidebarSettings'
 import EditSecondaryGroupDialog from './sidebar/dialogs/EditSecondaryGroupDialog'
 import AddOptionsDialog from './sidebar/dialogs/AddOptionsDialog'
 import { AddGroupDialog } from '@/components/features/AddGroupDialog'
 import { AddWebsiteDialog } from '@/components/features/AddWebsiteDialog'
 import { EditWebsiteDialog } from '@/components/features/EditWebsiteDialog'
 import { ConfirmDialog } from '@/components/features/ConfirmDialog'
+import SettingsDialog from '@/components/features/SettingsDialog'
 import { Website } from '@/types/website'
 import { useState } from 'react'
 
@@ -65,7 +65,6 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
     currentWebsite,
     contextMenuSecondaryGroup,
     showSettings,
-    showDebugOptions,
 
     // 对话框状态
     isWebsiteDialogOpen,
@@ -97,10 +96,8 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
     confirmDeleteWebsite,
     cancelDeleteWebsite,
     switchPrimaryGroup,
-    handleClearData,
     confirmClearData,
     cancelClearData,
-    handleResetToDefaults,
     confirmResetToDefaults,
     cancelResetToDefaults,
     handleEditSecondaryGroup,
@@ -112,7 +109,6 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
 
     // 状态设置函数
     setShowSettings,
-    setShowDebugOptions,
     setIsWebsiteDialogOpen,
     setIsEditDialogOpen,
     setIsGroupDialogOpen,
@@ -169,12 +165,8 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
                 onClick={() => setShowSettings(!showSettings)}
               >
                 <span className="flex items-center">
-                  {showSettings ? (
-                    <ArrowLeft className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
-                  ) : (
-                    <Settings className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
-                  )}
-                  {!isCollapsed && <span className="ml-2">{showSettings ? '返回' : '设置'}</span>}
+                  <Settings className={`${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
+                  {!isCollapsed && <span className="ml-2">设置</span>}
                 </span>
               </button>
             </div>
@@ -234,30 +226,14 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
         </Sidebar>
         <SidebarInset className="h-screen w-full">
           <div className="flex flex-1 flex-col overflow-hidden relative h-full">
-            {/* 设置页面 */}
-            <div
-              className={`absolute top-0 left-0 w-full h-full transition-opacity duration-200 ease-in-out ${
-                showSettings ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
-              }`}
-            >
-              <SidebarSettings
-                showDebugOptions={showDebugOptions}
-                setShowDebugOptions={setShowDebugOptions}
-                onClearData={handleClearData}
-                onResetToDefaults={handleResetToDefaults}
-                onClearSoftwareData={() => setClearSoftwareDataDialogOpen(true)}
-                onClearCache={() => setClearCacheDialogOpen(true)}
-              />
-            </div>
-
-            {/* 网站内容 */}
-            <div
-              className={`absolute top-0 left-0 w-full h-full transition-opacity duration-200 ease-in-out ${
-                showSettings ? 'opacity-0 z-0 pointer-events-none' : 'opacity-100 z-10'
-              }`}
-            >
-              {typeof children === 'function' ? children(currentWebsite) : children}
-            </div>
+            {/* 网站内容或设置页面 */}
+            {showSettings ? (
+              <SettingsDialog />
+            ) : typeof children === 'function' ? (
+              children(currentWebsite)
+            ) : (
+              children
+            )}
           </div>
         </SidebarInset>
       </div>

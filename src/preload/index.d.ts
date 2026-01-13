@@ -108,6 +108,184 @@ declare global {
           autoLoadExtensions?: boolean
         }) => Promise<{ success: boolean; error?: string }>
       }
+      // ===== 增强功能 API =====
+      enhanced: {
+        // 浏览器指纹伪装
+        fingerprint: {
+          generate: (options?: Record<string, unknown>) => Promise<Record<string, unknown>>
+          applyToWebsite: (websiteId: string) => Promise<boolean>
+          clear: (websiteId: string) => Promise<boolean>
+          refresh: (options?: Record<string, unknown>) => Promise<{ success: boolean }>
+          clearCache: () => Promise<{ success: boolean }>
+          getCacheStats: () => Promise<{ size: number; keys: string[] }>
+        }
+        // 全局快捷键
+        shortcut: {
+          register: (shortcut: string, action: string) => Promise<boolean>
+          unregister: (shortcut: string) => Promise<boolean>
+          getAll: () => Promise<Array<{ shortcut: string; action: string }>>
+          enableAll: () => Promise<void>
+          disableAll: () => Promise<void>
+        }
+        // 系统托盘
+        tray: {
+          create: (options?: Record<string, unknown>) => Promise<boolean>
+          destroy: () => Promise<void>
+          setTooltip: (tooltip: string) => Promise<void>
+          setContextMenu: (menuItems: unknown[]) => Promise<void>
+        }
+        // 窗口边缘吸附
+        windowAdsorption: {
+          enable: () => Promise<void>
+          disable: () => Promise<void>
+          isEnabled: () => Promise<boolean>
+          setSensitivity: (sensitivity: number) => Promise<void>
+        }
+        // 内存优化
+        memoryOptimizer: {
+          start: () => Promise<void>
+          stop: () => Promise<void>
+          cleanInactive: () => Promise<number>
+          getStats: () => Promise<{
+            totalCleaned: number
+            lastCleanTime: number | null
+            isRunning: boolean
+          }>
+        }
+        // 数据同步
+        dataSync: {
+          exportConfig: (options?: Record<string, unknown>) => Promise<Record<string, unknown>>
+          importConfig: (filePath: string) => Promise<boolean>
+          exportCookies: (websiteId?: string) => Promise<Record<string, unknown>>
+          importCookies: (filePath: string, websiteId?: string) => Promise<number>
+        }
+        // 自动启动
+        autoLaunch: {
+          enable: (args?: string[]) => Promise<boolean>
+          disable: () => Promise<boolean>
+          isEnabled: () => Promise<boolean>
+          toggle: () => Promise<boolean>
+          getSettings: () => Promise<Electron.LoginItemSettings>
+          setHidden: (hidden: boolean) => Promise<boolean>
+          setArgs: (args: string[]) => Promise<boolean>
+          wasLaunchedAtLogin: () => Promise<boolean>
+          wasLaunchedAsHidden: () => Promise<boolean>
+          getSupportedSettings: () => Promise<{
+            supportsOpenAtLogin: boolean
+            supportsOpenAsHidden: boolean
+            supportsArgs: boolean
+          }>
+          validateArgs: (args: string[]) => Promise<{
+            valid: boolean
+            errors: string[]
+          }>
+          getDefaultArgs: () => Promise<string[]>
+          getStatusReport: () => Promise<{
+            enabled: boolean
+            hidden: boolean
+            hasArgs: boolean
+            wasLaunchedAtLogin: boolean
+            wasLaunchedAsHidden: boolean
+            supportedSettings: {
+              openAtLogin: boolean
+              openAsHidden: boolean
+              args: boolean
+            }
+          }>
+          getEnvironmentInfo: () => Promise<{
+            platform: string
+            isDev: boolean
+            isSupported: boolean
+            electronVersion: string
+          }>
+        }
+        // JS 代码注入
+        jsInjector: {
+          inject: (websiteId: string, code: string) => Promise<string>
+          remove: (websiteId: string, injectionId: string) => Promise<boolean>
+          getAll: (websiteId: string) => Promise<Array<{ id: string; code: string }>>
+        }
+        // 代理支持
+        proxy: {
+          setForWebsite: (websiteId: string, proxyRules: string) => Promise<boolean>
+          clearForWebsite: (websiteId: string) => Promise<boolean>
+          testConnection: (
+            proxyRules: string,
+            testUrl?: string
+          ) => Promise<{
+            success: boolean
+            latency?: number
+            error?: string
+          }>
+        }
+        // 系统主题切换
+        theme: {
+          set: (theme: 'light' | 'dark' | 'system') => Promise<void>
+          getCurrent: () => Promise<'light' | 'dark' | 'system'>
+          toggle: () => Promise<void>
+        }
+        // 窗口管理
+        windowManager: {
+          toggleAlwaysOnTop: () => Promise<void>
+          toggleMiniMode: () => Promise<void>
+          snapToEdge: (edge: 'left' | 'right' | 'top' | 'bottom') => Promise<void>
+          getState: () => Promise<{
+            alwaysOnTop: boolean
+            miniMode: boolean
+            position: { x: number; y: number }
+            size: { width: number; height: number }
+          }>
+        }
+        // 扩展增强
+        extensionEnhancer: {
+          register: (extension: Record<string, unknown>) => Promise<string>
+          enable: (extensionId: string) => Promise<boolean>
+          disable: (extensionId: string) => Promise<boolean>
+          getStats: () => Promise<{
+            totalExtensions: number
+            enabledCount: number
+            disabledCount: number
+          }>
+        }
+        // 版本检查
+        versionChecker: {
+          checkUpdate: (force?: boolean) => Promise<{
+            available: boolean
+            latestVersion?: string
+            releaseNotes?: string
+            error?: string
+          }>
+          downloadUpdate: () => Promise<{ success: boolean; error?: string }>
+          installUpdate: () => Promise<{ success: boolean; error?: string }>
+          getVersionInfo: () => Promise<{
+            currentVersion: string
+            electronVersion: string
+            chromeVersion: string
+            nodeVersion: string
+          }>
+        }
+        // Session 隔离
+        sessionIsolation: {
+          create: (websiteId: string) => Promise<string>
+          clear: (websiteId: string) => Promise<boolean>
+          exportCookies: (websiteId: string) => Promise<unknown[]>
+          importCookies: (websiteId: string, cookies: unknown[]) => Promise<number>
+        }
+        // 进程崩溃处理
+        crashHandler: {
+          getStats: () => Promise<{
+            totalCrashes: number
+            lastCrashTime: number | null
+            reports: Array<{ id: string; timestamp: number; type: string }>
+          }>
+          clearReports: () => Promise<void>
+          sendReport: (reportId: string) => Promise<boolean>
+        }
+        // 通用功能
+        getAllFeatures: () => Promise<Record<string, boolean>>
+        enableAll: () => Promise<void>
+        disableAll: () => Promise<void>
+      }
     }
   }
 }

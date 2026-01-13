@@ -22,6 +22,7 @@ export interface ExtensionInfo {
 export interface ExtensionManifest {
   name: string
   version: string
+  manifest_version?: number
   description?: string
   permissions?: string[]
   host_permissions?: string[]

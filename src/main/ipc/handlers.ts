@@ -10,11 +10,16 @@ import type {
   Settings,
   WebsiteOrderUpdate
 } from '../types/store'
+import { registerEnhancedIpcHandlers } from './enhancedHandlers'
 
 export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): Promise<void> {
   const { storeService } = await import('../services')
+
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+
+  // 注册增强功能的 IPC 处理器
+  registerEnhancedIpcHandlers(mainWindow)
 
   // 窗口管理相关 IPC
   ipcMain.on('window:open-dev-tools', () => {

@@ -123,6 +123,7 @@ const Favicon: FC<FaviconProps> = ({ url, className }) => {
     }
 
     fetchFavicon()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url])
 
   if (loading) {

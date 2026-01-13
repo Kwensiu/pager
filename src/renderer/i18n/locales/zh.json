@@ -211,5 +211,105 @@
       "failedToValidateCrx": "验证 CRX 扩展失败",
       "failedToAddCrx": "添加 CRX 扩展失败"
     }
+  },
+  "enhancedFeatures": {
+    "title": "增强功能",
+    "description": "高级功能和优化设置",
+    "fingerprint": {
+      "title": "浏览器指纹伪装",
+      "description": "伪装浏览器指纹防止网站追踪",
+      "enabled": "启用指纹伪装",
+      "mode": "伪装模式",
+      "basic": "基础模式",
+      "balanced": "平衡模式",
+      "advanced": "高级模式"
+    },
+    "shortcuts": {
+      "title": "全局快捷键",
+      "description": "自定义全局快捷键",
+      "enabled": "启用全局快捷键",
+      "alwaysOnTop": "窗口置顶",
+      "miniMode": "小窗模式"
+    },
+    "tray": {
+      "title": "系统托盘",
+      "description": "系统托盘图标和通知",
+      "enabled": "启用系统托盘",
+      "showNotifications": "显示通知"
+    },
+    "windowAdsorption": {
+      "title": "窗口边缘吸附",
+      "description": "窗口靠近屏幕边缘时自动吸附",
+      "enabled": "启用窗口吸附",
+      "sensitivity": "吸附灵敏度"
+    },
+    "memoryOptimizer": {
+      "title": "内存优化",
+      "description": "自动清理不活跃的网站以释放内存",
+      "enabled": "启用内存优化",
+      "cleanInterval": "清理间隔（分钟）",
+      "maxInactiveTime": "最大不活跃时间（分钟）"
+    },
+    "dataSync": {
+      "title": "数据同步",
+      "description": "同步配置和 Cookie 数据",
+      "enabled": "启用数据同步",
+      "syncInterval": "同步间隔（小时）",
+      "exportConfig": "导出配置",
+      "importConfig": "导入配置",
+      "exportCookies": "导出 Cookie",
+      "importCookies": "导入 Cookie"
+    },
+    "autoLaunch": {
+      "title": "自动启动",
+      "description": "开机时自动启动应用",
+      "enabled": "启用自动启动"
+    },
+    "jsInjector": {
+      "title": "JS 代码注入",
+      "description": "向网站注入自定义 JavaScript 代码",
+      "enabled": "启用代码注入"
+    },
+    "proxy": {
+      "title": "代理支持",
+      "description": "为网站设置代理",
+      "enabled": "启用代理",
+      "rules": "代理规则",
+      "testConnection": "测试代理连接"
+    },
+    "theme": {
+      "title": "系统主题切换",
+      "description": "切换应用主题",
+      "enabled": "启用主题切换"
+    },
+    "windowManager": {
+      "title": "窗口管理",
+      "description": "窗口置顶、小窗模式等",
+      "alwaysOnTop": "窗口置顶",
+      "miniMode": "小窗模式",
+      "snapToEdge": "边缘吸附"
+    },
+    "versionChecker": {
+      "title": "版本检查",
+      "description": "检查应用更新",
+      "autoCheck": "自动检查更新",
+      "checkNow": "立即检查",
+      "download": "下载更新",
+      "install": "安装更新"
+    },
+    "sessionIsolation": {
+      "title": "Session 隔离",
+      "description": "为每个网站创建独立的会话",
+      "enabled": "启用 Session 隔离",
+      "exportCookies": "导出 Cookie",
+      "importCookies": "导入 Cookie"
+    },
+    "crashHandler": {
+      "title": "进程崩溃处理",
+      "description": "处理应用崩溃和错误报告",
+      "enabled": "启用崩溃报告",
+      "autoRestart": "崩溃后自动重启",
+      "sendReports": "发送崩溃报告"
+    }
   }
 }
