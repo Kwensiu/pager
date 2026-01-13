@@ -15,7 +15,32 @@ export const storageService = {
     if (isElectron) {
       try {
         const data = await window.api.store.getPrimaryGroups()
-        return data
+        // 为缺少 createdAt 字段的数据添加默认值
+        return data.map((group) => ({
+          ...group,
+          createdAt: group.createdAt ?? Date.now(),
+          updatedAt: group.updatedAt ?? Date.now(),
+          websites:
+            group.websites?.map((w) => ({
+              ...w,
+              order: w.order ?? 0,
+              createdAt: w.createdAt ?? Date.now(),
+              updatedAt: w.updatedAt ?? Date.now()
+            })) ?? [],
+          secondaryGroups: group.secondaryGroups.map((sg) => ({
+            ...sg,
+            primaryGroupId: group.id,
+            order: sg.order ?? 0,
+            createdAt: sg.createdAt ?? Date.now(),
+            updatedAt: sg.updatedAt ?? Date.now(),
+            websites: sg.websites.map((w) => ({
+              ...w,
+              order: w.order ?? 0,
+              createdAt: w.createdAt ?? Date.now(),
+              updatedAt: w.updatedAt ?? Date.now()
+            }))
+          }))
+        }))
       } catch (error) {
         console.error('Failed to load primary groups from store:', error)
         return this.getPrimaryGroupsFromLocalStorage()
@@ -349,11 +374,12 @@ export const storageService = {
     const groups = this.getPrimaryGroupsFromLocalStorage()
 
     for (let i = 0; i < groups.length; i++) {
-      if (groups[i].websites) {
-        const websiteIndex = groups[i].websites.findIndex((w) => w.id === websiteId)
+      const websites = groups[i].websites
+      if (websites) {
+        const websiteIndex = websites.findIndex((w) => w.id === websiteId)
         if (websiteIndex !== -1) {
-          groups[i].websites[websiteIndex] = {
-            ...groups[i].websites[websiteIndex],
+          websites[websiteIndex] = {
+            ...websites[websiteIndex],
             ...updates,
             updatedAt: Date.now()
           }
@@ -364,12 +390,11 @@ export const storageService = {
       }
 
       for (let j = 0; j < groups[i].secondaryGroups.length; j++) {
-        const websiteIndex = groups[i].secondaryGroups[j].websites.findIndex(
-          (w) => w.id === websiteId
-        )
+        const websites = groups[i].secondaryGroups[j].websites
+        const websiteIndex = websites.findIndex((w) => w.id === websiteId)
         if (websiteIndex !== -1) {
-          groups[i].secondaryGroups[j].websites[websiteIndex] = {
-            ...groups[i].secondaryGroups[j].websites[websiteIndex],
+          websites[websiteIndex] = {
+            ...websites[websiteIndex],
             ...updates,
             updatedAt: Date.now()
           }
@@ -401,10 +426,11 @@ export const storageService = {
     const groups = this.getPrimaryGroupsFromLocalStorage()
 
     for (let i = 0; i < groups.length; i++) {
-      if (groups[i].websites) {
-        const websiteIndex = groups[i].websites.findIndex((w) => w.id === websiteId)
+      const websites = groups[i].websites
+      if (websites) {
+        const websiteIndex = websites.findIndex((w) => w.id === websiteId)
         if (websiteIndex !== -1) {
-          groups[i].websites.splice(websiteIndex, 1)
+          websites.splice(websiteIndex, 1)
           groups[i].updatedAt = Date.now()
           this.savePrimaryGroupsToLocalStorage(groups)
           return true
@@ -412,11 +438,10 @@ export const storageService = {
       }
 
       for (let j = 0; j < groups[i].secondaryGroups.length; j++) {
-        const websiteIndex = groups[i].secondaryGroups[j].websites.findIndex(
-          (w) => w.id === websiteId
-        )
+        const websites = groups[i].secondaryGroups[j].websites
+        const websiteIndex = websites.findIndex((w) => w.id === websiteId)
         if (websiteIndex !== -1) {
-          groups[i].secondaryGroups[j].websites.splice(websiteIndex, 1)
+          websites.splice(websiteIndex, 1)
           groups[i].secondaryGroups[j].updatedAt = Date.now()
           groups[i].updatedAt = Date.now()
           this.savePrimaryGroupsToLocalStorage(groups)

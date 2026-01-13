@@ -1,15 +1,17 @@
-export interface Website {
-  id: string
-  name: string
-  url: string
-  icon?: string
-  favicon?: string
-  description?: string
-  order: number
-  createdAt: number
-  updatedAt: number
-}
+// 重新导出共享的统一类型定义
+export type {
+  Website,
+  PrimaryGroup,
+  SecondaryGroup,
+  WindowState,
+  Settings,
+  WebsiteOrderUpdate
+} from '@shared/types/store'
 
+// 导入类型用于本地接口定义
+import type { Website } from '@shared/types/store'
+
+// Renderer 层特有的类型定义
 export interface WebsiteGroup {
   id: string
   name: string
@@ -18,28 +20,6 @@ export interface WebsiteGroup {
   updatedAt: number
   expanded?: boolean
   category?: string
-}
-
-export interface PrimaryGroup {
-  id: string
-  name: string
-  secondaryGroups: SecondaryGroup[]
-  websites: Website[] // 直接在一级分类下的网站
-  order?: number
-  expanded?: boolean
-  createdAt: number
-  updatedAt: number
-}
-
-export interface SecondaryGroup {
-  id: string
-  name: string
-  websites: Website[]
-  order: number
-  expanded?: boolean
-  primaryGroupId: string
-  createdAt: number
-  updatedAt: number
 }
 
 export interface WebViewState {

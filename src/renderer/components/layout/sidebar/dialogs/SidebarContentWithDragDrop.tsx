@@ -342,10 +342,11 @@ const SidebarContentWithDragDrop: React.FC<SidebarContentWithDragDropProps> = (p
 
       if (isFromPrimaryGroup) {
         // 从一级分类中移除网站
-        const sourceIndex = activePrimaryGroup.websites.findIndex((w) => w.id === activeId)
+        const primaryGroupWebsites = activePrimaryGroup.websites ?? []
+        const sourceIndex = primaryGroupWebsites.findIndex((w) => w.id === activeId)
         if (sourceIndex === -1) return
 
-        const sourceWebsites = [...activePrimaryGroup.websites]
+        const sourceWebsites = [...primaryGroupWebsites]
         ;[movedWebsite] = sourceWebsites.splice(sourceIndex, 1)
 
         // 更新一级分类的网站列表
@@ -373,7 +374,7 @@ const SidebarContentWithDragDrop: React.FC<SidebarContentWithDragDropProps> = (p
             targetIndex--
           }
 
-          targetWebsites.splice(targetIndex, 0, movedWebsite!)
+          targetWebsites.splice(targetIndex, 0, { ...movedWebsite!, order: targetIndex })
 
           const reorderedWebsites = targetWebsites.map((website, index) => ({
             ...website,
@@ -464,7 +465,10 @@ const SidebarContentWithDragDrop: React.FC<SidebarContentWithDragDropProps> = (p
             }
 
             const targetWebsites = [...updatedSourceWebsites]
-            targetWebsites.splice(adjustedTargetIndex, 0, movedWebsite!)
+            targetWebsites.splice(adjustedTargetIndex, 0, {
+              ...movedWebsite!,
+              order: adjustedTargetIndex
+            })
 
             const reorderedWebsites = targetWebsites.map((website, index) => ({
               ...website,

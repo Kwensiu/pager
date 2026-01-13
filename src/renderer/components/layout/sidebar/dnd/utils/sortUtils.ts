@@ -7,21 +7,23 @@ import { Website, SecondaryGroup } from '@/types/website'
 /**
  * 比较两个项目的顺序
  */
-export function compareOrder(a: { order: number }, b: { order: number }): number {
-  return a.order - b.order
+export function compareOrder(a: { order?: number }, b: { order?: number }): number {
+  const orderA = a.order ?? 0
+  const orderB = b.order ?? 0
+  return orderA - orderB
 }
 
 /**
  * 获取排序后的数组
  */
-export function getSortedArray<T extends { order: number }>(items: T[]): T[] {
+export function getSortedArray<T extends { order?: number }>(items: T[]): T[] {
   return [...items].sort(compareOrder)
 }
 
 /**
  * 重新计算顺序值，确保间隔均匀
  */
-export function recalculateOrders<T extends { order: number }>(
+export function recalculateOrders<T extends { order?: number }>(
   items: T[],
   startOrder = 0,
   interval = 100
@@ -35,7 +37,7 @@ export function recalculateOrders<T extends { order: number }>(
 /**
  * 在指定位置插入项目并重新计算顺序
  */
-export function insertItemAndRecalculate<T extends { order: number }>(
+export function insertItemAndRecalculate<T extends { order?: number }>(
   items: T[],
   newItem: T,
   targetIndex: number
@@ -60,7 +62,7 @@ export function insertItemAndRecalculate<T extends { order: number }>(
 /**
  * 移动项目到新位置并重新计算顺序
  */
-export function moveItemAndRecalculate<T extends { order: number; id: string }>(
+export function moveItemAndRecalculate<T extends { order?: number; id: string }>(
   items: T[],
   itemId: string,
   targetIndex: number
@@ -90,8 +92,8 @@ export function moveItemAndRecalculate<T extends { order: number; id: string }>(
  * 计算插入位置的 order 值
  */
 export function calculateInsertOrder(
-  prevItem: { order: number } | null,
-  nextItem: { order: number } | null,
+  prevItem: { order?: number } | null,
+  nextItem: { order?: number } | null,
   defaultOrder = 0
 ): number {
   if (!prevItem && !nextItem) {
@@ -100,17 +102,17 @@ export function calculateInsertOrder(
 
   if (!prevItem && nextItem) {
     // 插入到第一个位置
-    return nextItem.order - 100
+    return (nextItem.order ?? 0) - 100
   }
 
   if (prevItem && !nextItem) {
     // 插入到最后一个位置
-    return prevItem.order + 100
+    return (prevItem.order ?? 0) + 100
   }
 
   if (prevItem && nextItem) {
     // 插入到两个项目之间
-    return Math.floor((prevItem.order + nextItem.order) / 2)
+    return Math.floor(((prevItem.order ?? 0) + (nextItem.order ?? 0)) / 2)
   }
 
   return defaultOrder
@@ -119,13 +121,16 @@ export function calculateInsertOrder(
 /**
  * 检查顺序是否需要重新平衡
  */
-export function needsRebalancing<T extends { order: number }>(items: T[], threshold = 10): boolean {
+export function needsRebalancing<T extends { order?: number }>(
+  items: T[],
+  threshold = 10
+): boolean {
   if (items.length <= 1) {
     return false
   }
 
   // 检查是否有重复的 order 值
-  const orders = items.map((item) => item.order)
+  const orders = items.map((item) => item.order ?? 0)
   const uniqueOrders = new Set(orders)
   if (uniqueOrders.size !== orders.length) {
     return true

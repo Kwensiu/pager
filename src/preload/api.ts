@@ -1,4 +1,12 @@
 import { ipcRenderer } from 'electron'
+import type {
+  PrimaryGroup,
+  SecondaryGroup,
+  Website,
+  WindowState,
+  Settings,
+  WebsiteOrderUpdate
+} from '../main/types/store'
 
 export const api = {
   // WebView 相关 API
@@ -17,6 +25,14 @@ export const api = {
     openDevTools: () => ipcRenderer.send('window:open-dev-tools')
   },
 
+  // 对话框 API
+  dialog: {
+    openDirectory: (options?: Electron.OpenDialogOptions) =>
+      ipcRenderer.invoke('dialog:open-directory', options),
+    openFile: (options?: Electron.OpenDialogOptions) =>
+      ipcRenderer.invoke('dialog:open-file', options)
+  },
+
   // 获取网站图标
   getFavicon: (url: string) => ipcRenderer.invoke('get-favicon', url),
 
@@ -24,28 +40,30 @@ export const api = {
   store: {
     // 主要分组相关
     getPrimaryGroups: () => ipcRenderer.invoke('store:get-primary-groups'),
-    setPrimaryGroups: (groups: any[]) => ipcRenderer.invoke('store:set-primary-groups', groups),
+    setPrimaryGroups: (groups: PrimaryGroup[]) =>
+      ipcRenderer.invoke('store:set-primary-groups', groups),
     clearPrimaryGroups: () => ipcRenderer.invoke('store:clear-primary-groups'),
-    addPrimaryGroup: (group: any) => ipcRenderer.invoke('store:add-primary-group', group),
-    updatePrimaryGroup: (groupId: string, updates: any) =>
+    addPrimaryGroup: (group: Partial<PrimaryGroup>) =>
+      ipcRenderer.invoke('store:add-primary-group', group),
+    updatePrimaryGroup: (groupId: string, updates: Partial<PrimaryGroup>) =>
       ipcRenderer.invoke('store:update-primary-group', groupId, updates),
     deletePrimaryGroup: (groupId: string) =>
       ipcRenderer.invoke('store:delete-primary-group', groupId),
 
     // 次要分组相关
-    addSecondaryGroup: (primaryGroupId: string, secondaryGroup: any) =>
+    addSecondaryGroup: (primaryGroupId: string, secondaryGroup: SecondaryGroup) =>
       ipcRenderer.invoke('store:add-secondary-group', primaryGroupId, secondaryGroup),
-    updateSecondaryGroup: (secondaryGroupId: string, updates: any) =>
+    updateSecondaryGroup: (secondaryGroupId: string, updates: Partial<SecondaryGroup>) =>
       ipcRenderer.invoke('store:update-secondary-group', secondaryGroupId, updates),
     deleteSecondaryGroup: (secondaryGroupId: string) =>
       ipcRenderer.invoke('store:delete-secondary-group', secondaryGroupId),
 
     // 网站相关
-    addWebsiteToPrimary: (primaryGroupId: string, website: any) =>
+    addWebsiteToPrimary: (primaryGroupId: string, website: Website) =>
       ipcRenderer.invoke('store:add-website-to-primary', primaryGroupId, website),
-    addWebsiteToSecondary: (secondaryGroupId: string, website: any) =>
+    addWebsiteToSecondary: (secondaryGroupId: string, website: Website) =>
       ipcRenderer.invoke('store:add-website-to-secondary', secondaryGroupId, website),
-    updateWebsite: (websiteId: string, updates: any) =>
+    updateWebsite: (websiteId: string, updates: Partial<Website>) =>
       ipcRenderer.invoke('store:update-website', websiteId, updates),
     deleteWebsite: (websiteId: string) => ipcRenderer.invoke('store:delete-website', websiteId),
 
@@ -54,7 +72,7 @@ export const api = {
       ipcRenderer.invoke('store:update-secondary-group-order', primaryGroupId, secondaryGroupIds),
     updateWebsiteOrder: (secondaryGroupId: string, websiteIds: string[]) =>
       ipcRenderer.invoke('store:update-website-order', secondaryGroupId, websiteIds),
-    batchUpdateWebsiteOrders: (updates: any[]) =>
+    batchUpdateWebsiteOrders: (updates: WebsiteOrderUpdate[]) =>
       ipcRenderer.invoke('store:batch-update-website-orders', updates),
 
     // 应用状态相关
@@ -64,15 +82,30 @@ export const api = {
 
     // 窗口状态相关
     getWindowState: () => ipcRenderer.invoke('store:get-window-state'),
-    setWindowState: (state: any) => ipcRenderer.invoke('store:set-window-state', state),
+    setWindowState: (state: Partial<WindowState>) =>
+      ipcRenderer.invoke('store:set-window-state', state),
 
     // 设置相关
     getSettings: () => ipcRenderer.invoke('store:get-settings'),
-    updateSettings: (updates: any) => ipcRenderer.invoke('store:update-settings', updates),
+    updateSettings: (updates: Partial<Settings>) =>
+      ipcRenderer.invoke('store:update-settings', updates),
 
     // 清除数据相关
     clearAll: () => ipcRenderer.invoke('store:clear-all'),
-    resetToDefaults: (defaultGroups: any[]) =>
+    resetToDefaults: (defaultGroups: PrimaryGroup[]) =>
       ipcRenderer.invoke('store:reset-to-defaults', defaultGroups)
+  },
+
+  // 扩展相关 API
+  extension: {
+    getAll: () => ipcRenderer.invoke('extension:getAll'),
+    add: (path: string) => ipcRenderer.invoke('extension:add', path),
+    remove: (id: string) => ipcRenderer.invoke('extension:remove', id),
+    toggle: (id: string, enabled: boolean) => ipcRenderer.invoke('extension:toggle', id, enabled),
+    validate: (path: string) => ipcRenderer.invoke('extension:validate', path),
+    getLoaded: () => ipcRenderer.invoke('extension:getLoaded'),
+    getSettings: () => ipcRenderer.invoke('extension:getSettings'),
+    updateSettings: (settings: { enableExtensions?: boolean; autoLoadExtensions?: boolean }) =>
+      ipcRenderer.invoke('extension:updateSettings', settings)
   }
 }

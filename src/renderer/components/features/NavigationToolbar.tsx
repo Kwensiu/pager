@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, KeyboardEvent, ChangeEvent } from 'react'
-import { ArrowLeft, ArrowRight, RefreshCw, Globe, ExternalLink } from 'lucide-react'
+import { ArrowLeft, ArrowRight, RefreshCw, Globe, ExternalLink, Plug } from 'lucide-react'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { cn } from '@/lib/utils'
 import { useMouseSideButtons } from '@/hooks/useMouseSideButtons'
+import { useI18n } from '@/i18n/useI18n'
 
 interface NavigationToolbarProps {
   /** 当前显示的 URL */
@@ -26,6 +27,8 @@ interface NavigationToolbarProps {
   canGoForward?: boolean
   /** 类名 */
   className?: string
+  /** 扩展按钮点击回调 */
+  onExtensionClick?: () => void
 }
 
 export const NavigationToolbar = ({
@@ -38,8 +41,10 @@ export const NavigationToolbar = ({
   onNavigate,
   canGoBack = false,
   canGoForward = false,
-  className
+  className,
+  onExtensionClick
 }: NavigationToolbarProps): React.ReactElement => {
+  const { t } = useI18n()
   const [editUrl, setEditUrl] = useState(url)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -154,6 +159,19 @@ export const NavigationToolbar = ({
           />
         </div>
       </div>
+
+      {/* 扩展按钮 */}
+      {onExtensionClick && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 text-foreground hover:bg-accent hover:text-accent-foreground"
+          onClick={onExtensionClick}
+          aria-label={t('extensions.title')}
+        >
+          <Plug className="h-4 w-4" />
+        </Button>
+      )}
 
       {/* 外部打开按钮 */}
       {url && onOpenExternal && (

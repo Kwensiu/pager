@@ -1,0 +1,590 @@
+import { session } from 'electron'
+import { join } from 'path'
+import {
+  existsSync,
+  readFileSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  readFileSync as fsReadFileSync
+} from 'fs'
+import type { ExtensionInfo, ExtensionManifest, ExtensionConfig } from './types'
+
+// 动态导入 adm-zip 以避免在模块顶层导入
+let AdmZip: any = null
+async function getAdmZip() {
+  if (!AdmZip) {
+    AdmZip = (await import('adm-zip')).default
+  }
+  return AdmZip
+}
+
+// 解析 CRX 文件
+function parseCrxFile(crxPath: string): Buffer {
+  const data = fsReadFileSync(crxPath)
+
+  // 检查文件大小
+  if (data.length < 16) {
+    throw new Error('Invalid CRX file: file too small (less than 16 bytes)')
+  }
+
+  // 检查 CRX 魔数
+  const magic = data.toString('ascii', 0, 4)
+  if (magic !== 'Cr24') {
+    throw new Error('Invalid CRX file: magic number mismatch (expected "Cr24")')
+  }
+
+  // 读取版本号
+  const version = data.readUInt32LE(4)
+  if (version !== 2 && version !== 3) {
+    throw new Error(`Unsupported CRX version: ${version} (only version 2 and 3 are supported)`)
+  }
+
+  // 读取公钥长度和签名长度
+  const publicKeyLength = data.readUInt32LE(8)
+  const signatureLength = data.readUInt32LE(12)
+
+  // 计算 ZIP 数据的起始位置
+  const headerSize = 16 + publicKeyLength + signatureLength
+
+  // 检查是否有足够的数据
+  if (headerSize >= data.length) {
+    throw new Error(
+      `Invalid CRX file: header size (${headerSize} bytes) exceeds file size (${data.length} bytes). ` +
+        `Public key length: ${publicKeyLength}, Signature length: ${signatureLength}`
+    )
+  }
+
+  // 返回 ZIP 数据
+  return data.subarray(headerSize)
+}
+
+// 检查是否是有效的 CRX 文件
+function isValidCrxFile(crxPath: string): boolean {
+  try {
+    const data = fsReadFileSync(crxPath)
+    const magic = data.toString('ascii', 0, 4)
+    return magic === 'Cr24'
+  } catch {
+    return false
+  }
+}
+
+export interface ExtensionSettings {
+  enableExtensions: boolean
+  autoLoadExtensions: boolean
+}
+
+export class SimpleExtensionManager {
+  private static instance: SimpleExtensionManager
+  private extensions: Map<string, ExtensionInfo> = new Map()
+  private configPath: string = ''
+  private config: ExtensionConfig = { extensions: [] }
+  private settings: ExtensionSettings = {
+    enableExtensions: true,
+    autoLoadExtensions: true
+  }
+
+  static getInstance(): SimpleExtensionManager {
+    if (!SimpleExtensionManager.instance) {
+      SimpleExtensionManager.instance = new SimpleExtensionManager()
+    }
+    return SimpleExtensionManager.instance
+  }
+
+  initialize(userDataPath: string): void {
+    this.configPath = join(userDataPath, 'extensions', 'extensions.json')
+    this.loadConfig()
+  }
+
+  private loadConfig(): void {
+    try {
+      if (existsSync(this.configPath)) {
+        const data = readFileSync(this.configPath, 'utf-8')
+        this.config = JSON.parse(data)
+
+        // 将配置中的扩展加载到内存
+        this.config.extensions.forEach((ext) => {
+          this.extensions.set(ext.id, ext)
+        })
+      } else {
+        this.config = { extensions: [] }
+        this.saveConfig()
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Failed to load extension config:', errorMessage)
+      this.config = { extensions: [] }
+    }
+  }
+
+  private saveConfig(): void {
+    try {
+      const dir = join(this.configPath, '..')
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true })
+      }
+
+      this.config.extensions = Array.from(this.extensions.values())
+      writeFileSync(this.configPath, JSON.stringify(this.config, null, 2))
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('Failed to save extension config:', errorMessage)
+    }
+  }
+
+  async validateExtension(
+    extensionPath: string
+  ): Promise<{ valid: boolean; manifest?: ExtensionManifest; error?: string }> {
+    try {
+      // 检查是否是 CRX 文件
+      if (extensionPath.toLowerCase().endsWith('.crx')) {
+        return await this.validateExtensionFromCrx(extensionPath)
+      }
+
+      // 检查是否是 ZIP 文件
+      if (extensionPath.toLowerCase().endsWith('.zip')) {
+        return await this.validateExtensionFromZip(extensionPath)
+      }
+
+      if (!existsSync(extensionPath)) {
+        return { valid: false, error: 'Extension path does not exist' }
+      }
+
+      const manifestPath = join(extensionPath, 'manifest.json')
+      if (!existsSync(manifestPath)) {
+        return { valid: false, error: 'manifest.json not found' }
+      }
+
+      const manifestData = readFileSync(manifestPath, 'utf-8')
+      const manifest = JSON.parse(manifestData)
+
+      // 基本验证
+      if (!manifest.name) {
+        return { valid: false, error: 'Extension name is required' }
+      }
+
+      if (!manifest.version) {
+        return { valid: false, error: 'Extension version is required' }
+      }
+
+      // Chrome 扩展需要 manifest_version
+      if (!manifest.manifest_version) {
+        return { valid: false, error: 'manifest_version is required' }
+      }
+
+      return { valid: true, manifest }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { valid: false, error: `Failed to validate extension: ${errorMessage}` }
+    }
+  }
+
+  async validateExtensionFromZip(
+    zipPath: string
+  ): Promise<{ valid: boolean; manifest?: ExtensionManifest; error?: string }> {
+    try {
+      const AdmZip = await getAdmZip()
+      const zip = new AdmZip(zipPath)
+
+      // 读取 manifest.json
+      const manifestEntry = zip.getEntry('manifest.json')
+      if (!manifestEntry) {
+        return { valid: false, error: 'manifest.json not found in ZIP file' }
+      }
+
+      const manifestData = manifestEntry.getData().toString('utf-8')
+      const manifest: ExtensionManifest = JSON.parse(manifestData)
+
+      // 基本验证
+      if (!manifest.name) {
+        return { valid: false, error: 'Extension name is required' }
+      }
+
+      if (!manifest.version) {
+        return { valid: false, error: 'Extension version is required' }
+      }
+
+      if (!manifest.manifest_version) {
+        return { valid: false, error: 'manifest_version is required' }
+      }
+
+      return { valid: true, manifest }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { valid: false, error: `Failed to validate ZIP extension: ${errorMessage}` }
+    }
+  }
+
+  async addExtension(
+    extensionPath: string
+  ): Promise<{ success: boolean; extension?: ExtensionInfo; error?: string }> {
+    try {
+      // 检查是否是 CRX 文件
+      if (extensionPath.toLowerCase().endsWith('.crx')) {
+        return await this.addExtensionFromCrx(extensionPath)
+      }
+
+      // 检查是否是 ZIP 文件
+      if (extensionPath.toLowerCase().endsWith('.zip')) {
+        return await this.addExtensionFromZip(extensionPath)
+      }
+
+      const validation = await this.validateExtension(extensionPath)
+      if (!validation.valid) {
+        return { success: false, error: validation.error }
+      }
+
+      const manifest = validation.manifest!
+      const extensionId = this.generateExtensionId(manifest.name, manifest.version)
+
+      // 检查是否已存在
+      if (this.extensions.has(extensionId)) {
+        return { success: false, error: 'Extension already exists' }
+      }
+
+      const extension: ExtensionInfo = {
+        id: extensionId,
+        name: manifest.name,
+        version: manifest.version,
+        path: extensionPath,
+        enabled: true,
+        manifest
+      }
+
+      this.extensions.set(extensionId, extension)
+      this.saveConfig()
+
+      // 如果启用，立即加载
+      if (extension.enabled) {
+        await this.loadExtension(extension)
+      }
+
+      return { success: true, extension }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: `Failed to add extension: ${errorMessage}` }
+    }
+  }
+
+  async addExtensionFromZip(
+    zipPath: string
+  ): Promise<{ success: boolean; extension?: ExtensionInfo; error?: string }> {
+    try {
+      const AdmZip = await getAdmZip()
+      const zip = new AdmZip(zipPath)
+
+      // 读取 manifest.json
+      const manifestEntry = zip.getEntry('manifest.json')
+      if (!manifestEntry) {
+        return { success: false, error: 'manifest.json not found in ZIP file' }
+      }
+
+      const manifestData = manifestEntry.getData().toString('utf-8')
+      const manifest: ExtensionManifest = JSON.parse(manifestData)
+
+      // 基本验证
+      if (!manifest.name) {
+        return { success: false, error: 'Extension name is required' }
+      }
+
+      if (!manifest.version) {
+        return { success: false, error: 'Extension version is required' }
+      }
+
+      if (!manifest.manifest_version) {
+        return { success: false, error: 'manifest_version is required' }
+      }
+
+      const extensionId = this.generateExtensionId(manifest.name, manifest.version)
+
+      // 检查是否已存在
+      if (this.extensions.has(extensionId)) {
+        return { success: false, error: 'Extension already exists' }
+      }
+
+      // 创建解压目录
+      const extractDir = join(this.configPath, '..', 'extracted', extensionId)
+      if (existsSync(extractDir)) {
+        rmSync(extractDir, { recursive: true, force: true })
+      }
+      mkdirSync(extractDir, { recursive: true })
+
+      // 解压 ZIP 文件
+      zip.extractAllTo(extractDir, true)
+
+      const extension: ExtensionInfo = {
+        id: extensionId,
+        name: manifest.name,
+        version: manifest.version,
+        path: extractDir,
+        enabled: true,
+        manifest
+      }
+
+      this.extensions.set(extensionId, extension)
+      this.saveConfig()
+
+      // 如果启用，立即加载
+      if (extension.enabled) {
+        await this.loadExtension(extension)
+      }
+
+      return { success: true, extension }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: `Failed to add extension from ZIP: ${errorMessage}` }
+    }
+  }
+
+  async addExtensionFromCrx(
+    crxPath: string
+  ): Promise<{ success: boolean; extension?: ExtensionInfo; error?: string }> {
+    try {
+      // 检查是否是有效的 CRX 文件
+      if (!isValidCrxFile(crxPath)) {
+        // 如果不是 CRX 格式，尝试作为 ZIP 文件处理
+        return await this.addExtensionFromZip(crxPath)
+      }
+
+      // 解析 CRX 文件获取 ZIP 数据
+      const zipData = parseCrxFile(crxPath)
+
+      // 使用 adm-zip 处理 ZIP 数据
+      const AdmZip = await getAdmZip()
+      const zip = new AdmZip(zipData)
+
+      // 读取 manifest.json
+      const manifestEntry = zip.getEntry('manifest.json')
+      if (!manifestEntry) {
+        return { success: false, error: 'manifest.json not found in CRX file' }
+      }
+
+      const manifestData = manifestEntry.getData().toString('utf-8')
+      const manifest: ExtensionManifest = JSON.parse(manifestData)
+
+      // 基本验证
+      if (!manifest.name) {
+        return { success: false, error: 'Extension name is required' }
+      }
+
+      if (!manifest.version) {
+        return { success: false, error: 'Extension version is required' }
+      }
+
+      if (!manifest.manifest_version) {
+        return { success: false, error: 'manifest_version is required' }
+      }
+
+      const extensionId = this.generateExtensionId(manifest.name, manifest.version)
+
+      // 检查是否已存在
+      if (this.extensions.has(extensionId)) {
+        return { success: false, error: 'Extension already exists' }
+      }
+
+      // 创建解压目录
+      const extractDir = join(this.configPath, '..', 'extracted', extensionId)
+      if (existsSync(extractDir)) {
+        rmSync(extractDir, { recursive: true, force: true })
+      }
+      mkdirSync(extractDir, { recursive: true })
+
+      // 解压 ZIP 数据
+      zip.extractAllTo(extractDir, true)
+
+      const extension: ExtensionInfo = {
+        id: extensionId,
+        name: manifest.name,
+        version: manifest.version,
+        path: extractDir,
+        enabled: true,
+        manifest
+      }
+
+      this.extensions.set(extensionId, extension)
+      this.saveConfig()
+
+      // 如果启用，立即加载
+      if (extension.enabled) {
+        await this.loadExtension(extension)
+      }
+
+      return { success: true, extension }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: `Failed to add extension from CRX: ${errorMessage}` }
+    }
+  }
+
+  async validateExtensionFromCrx(
+    crxPath: string
+  ): Promise<{ valid: boolean; manifest?: ExtensionManifest; error?: string }> {
+    try {
+      // 检查是否是有效的 CRX 文件
+      if (!isValidCrxFile(crxPath)) {
+        // 如果不是 CRX 格式，尝试作为 ZIP 文件处理
+        return await this.validateExtensionFromZip(crxPath)
+      }
+
+      // 解析 CRX 文件获取 ZIP 数据
+      const zipData = parseCrxFile(crxPath)
+
+      // 使用 adm-zip 处理 ZIP 数据
+      const AdmZip = await getAdmZip()
+      const zip = new AdmZip(zipData)
+
+      // 读取 manifest.json
+      const manifestEntry = zip.getEntry('manifest.json')
+      if (!manifestEntry) {
+        return { valid: false, error: 'manifest.json not found in CRX file' }
+      }
+
+      const manifestData = manifestEntry.getData().toString('utf-8')
+      const manifest: ExtensionManifest = JSON.parse(manifestData)
+
+      // 基本验证
+      if (!manifest.name) {
+        return { valid: false, error: 'Extension name is required' }
+      }
+
+      if (!manifest.version) {
+        return { valid: false, error: 'Extension version is required' }
+      }
+
+      if (!manifest.manifest_version) {
+        return { valid: false, error: 'manifest_version is required' }
+      }
+
+      return { valid: true, manifest }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { valid: false, error: `Failed to validate CRX extension: ${errorMessage}` }
+    }
+  }
+
+  async removeExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const extension = this.extensions.get(extensionId)
+      if (!extension) {
+        return { success: false, error: 'Extension not found' }
+      }
+
+      // 如果已加载，先卸载
+      if (extension.enabled) {
+        await this.unloadExtension(extensionId)
+      }
+
+      this.extensions.delete(extensionId)
+      this.saveConfig()
+
+      return { success: true }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: `Failed to remove extension: ${errorMessage}` }
+    }
+  }
+
+  async toggleExtension(extensionId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const extension = this.extensions.get(extensionId)
+      if (!extension) {
+        return { success: false, error: 'Extension not found' }
+      }
+
+      extension.enabled = !extension.enabled
+      this.saveConfig()
+
+      if (extension.enabled) {
+        await this.loadExtension(extension)
+      } else {
+        await this.unloadExtension(extensionId)
+      }
+
+      return { success: true }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: `Failed to toggle extension: ${errorMessage}` }
+    }
+  }
+
+  getAllExtensions(): ExtensionInfo[] {
+    return Array.from(this.extensions.values())
+  }
+
+  async loadAllExtensions(): Promise<void> {
+    // 检查是否启用扩展功能
+    if (!this.settings.enableExtensions) {
+      console.log('Extensions are disabled in settings')
+      return
+    }
+
+    // 检查是否自动加载扩展
+    if (!this.settings.autoLoadExtensions) {
+      console.log('Auto-load extensions is disabled in settings')
+      return
+    }
+
+    const extensions = this.getAllExtensions()
+    for (const extension of extensions) {
+      if (extension.enabled) {
+        try {
+          await this.loadExtension(extension)
+        } catch (error) {
+          console.error(`Failed to load extension ${extension.name}:`, error)
+        }
+      }
+    }
+  }
+
+  getSettings(): ExtensionSettings {
+    return { ...this.settings }
+  }
+
+  updateSettings(newSettings: Partial<ExtensionSettings>): void {
+    this.settings = { ...this.settings, ...newSettings }
+    console.log('Extension settings updated:', this.settings)
+  }
+
+  private async loadExtension(extension: ExtensionInfo): Promise<void> {
+    try {
+      // 使用共享的 session 加载扩展，以便在所有 webview 中工作
+      const sharedSession = session.fromPartition('persist:webview-shared')
+
+      // 使用新的 API (session.extensions.loadExtension) 如果可用
+      if (sharedSession.extensions && sharedSession.extensions.loadExtension) {
+        await sharedSession.extensions.loadExtension(extension.path)
+      } else {
+        // 回退到旧的 API
+        await sharedSession.loadExtension(extension.path)
+      }
+
+      console.log(`Extension loaded: ${extension.name}`)
+    } catch (error) {
+      console.error(`Failed to load extension ${extension.name}:`, error)
+      throw error
+    }
+  }
+
+  private async unloadExtension(extensionId: string): Promise<void> {
+    try {
+      // 注意：Electron 目前没有直接的 unloadExtension API
+      // 这里只是记录日志，实际卸载需要重启应用
+      console.log(`Extension unloaded: ${extensionId}`)
+    } catch (error) {
+      console.error(`Failed to unload extension ${extensionId}:`, error)
+    }
+  }
+
+  private generateExtensionId(name: string, version: string): string {
+    // 简单的 ID 生成逻辑
+    const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '-')
+    return `${cleanName}-${version}`
+  }
+
+  getLoadedExtensions(): string[] {
+    // 返回已加载的扩展 ID 列表
+    const extensions = this.getAllExtensions()
+    return extensions.filter((ext) => ext.enabled).map((ext) => ext.id)
+  }
+}

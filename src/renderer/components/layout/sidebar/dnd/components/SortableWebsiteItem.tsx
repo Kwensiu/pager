@@ -262,7 +262,7 @@ export const SortableWebsiteList: React.FC<SortableWebsiteListProps> = ({
   isCollapsed = false
 }) => {
   // 按order字段排序
-  const sortedWebsites = [...websites].sort((a, b) => a.order - b.order)
+  const sortedWebsites = [...websites].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
   return (
     <div className={`space-y-1 ${className}`}>

@@ -113,10 +113,103 @@
     "version": "版本: 0.0.2",
     "electronVersion": "Electron: v39.2.7",
     "chromiumVersion": "Chromium: v142.0.7444.235",
-    "nodeVersion": "Node.js: v22.21.1"
+    "nodeVersion": "Node.js: v22.21.1",
+    "extensions": "扩展",
+    "enableExtensions": "启用扩展",
+    "enableExtensionsDescription": "允许加载和使用 Chrome 扩展，包括油猴脚本",
+    "manageExtensions": "管理扩展",
+    "manageExtensionsDescription": "查看、添加、删除已安装的扩展",
+    "extensionsPath": "扩展路径",
+    "extensionsPathDescription": "自定义扩展存储路径",
+    "autoLoadExtensions": "自动加载扩展",
+    "autoLoadExtensionsDescription": "启动时自动加载已启用的扩展"
   },
   "confirmDialog": {
     "clearDataTitle": "确认清除数据",
     "clearDataDescription": "确定要清除所有数据吗？这将删除所有保存的网站和分组。此操作不可撤销。"
+  },
+  "extensions": {
+    "title": "扩展管理",
+    "description": "管理已安装的 Chrome 扩展，包括油猴脚本等",
+    "addExtension": "添加扩展",
+    "addExtensionDescription": "选择包含 manifest.json 的扩展文件夹或 ZIP 文件",
+    "noExtensions": "暂无已安装的扩展",
+    "extensionName": "扩展名称",
+    "extensionVersion": "版本",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "enable": "启用",
+    "disable": "禁用",
+    "remove": "删除",
+    "selectExtensionFolder": "选择扩展文件夹",
+    "selectExtensionZip": "选择扩展 ZIP 文件",
+    "selectExtensionCrx": "选择扩展 CRX 文件",
+    "invalidExtension": "无效的扩展",
+    "extensionAdded": "扩展已添加",
+    "extensionRemoved": "扩展已删除",
+    "extensionToggled": "扩展状态已更新",
+    "confirmRemove": "确认删除扩展",
+    "confirmRemoveDescription": "确定要删除此扩展吗？此操作不可撤销。",
+    "loadingExtensions": "正在加载扩展...",
+    "extensionPath": "扩展路径",
+    "extensionZip": "扩展 ZIP 文件",
+    "extensionCrx": "扩展 CRX 文件",
+    "installMode": "安装方式",
+    "installFromFolder": "Folder",
+    "installFromZip": "ZIP",
+    "installFromCrx": "CRX",
+    "permissions": "权限",
+    "description": "描述",
+    "validation": {
+      "pathNotExist": "扩展路径不存在",
+      "manifestNotFound": "未找到 manifest.json 文件",
+      "nameRequired": "扩展名称不能为空",
+      "versionRequired": "扩展版本不能为空",
+      "manifestVersionRequired": "缺少 manifest_version 字段",
+      "validationFailed": "扩展验证失败",
+      "alreadyExists": "该扩展已存在"
+    },
+    "status": {
+      "loading": "加载中",
+      "loaded": "已加载",
+      "unloaded": "未加载",
+      "error": "错误"
+    },
+    "actions": {
+      "viewDetails": "查看详情",
+      "openFolder": "打开文件夹",
+      "reload": "重新加载",
+      "export": "导出",
+      "import": "导入"
+    },
+    "details": {
+      "title": "扩展详情",
+      "id": "扩展 ID",
+      "author": "作者",
+      "homepage": "主页",
+      "icons": "图标",
+      "contentScripts": "内容脚本",
+      "backgroundScripts": "后台脚本",
+      "webAccessibleResources": "可访问资源"
+    },
+    "tips": {
+      "howToAdd": "如何添加扩展？",
+      "howToAddDescription": "点击添加扩展按钮，选择包含 manifest.json 的扩展文件夹即可。支持标准的 Chrome 扩展格式。",
+      "tampermonkey": "支持油猴脚本",
+      "tampermonkeyDescription": "您可以安装 Tampermonkey 扩展来使用油猴脚本，提升网页浏览体验。",
+      "restartRequired": "部分扩展需要重启应用才能生效"
+    },
+    "errors": {
+      "loadFailed": "加载扩展失败",
+      "removeFailed": "删除扩展失败",
+      "toggleFailed": "切换扩展状态失败",
+      "unknownError": "未知错误",
+      "invalidCrxFile": "无效的 CRX 文件",
+      "crxMagicMismatch": "CRX 文件格式不正确",
+      "unsupportedCrxVersion": "不支持的 CRX 版本",
+      "crxHeaderTooLarge": "CRX 文件头过大",
+      "failedToValidateCrx": "验证 CRX 扩展失败",
+      "failedToAddCrx": "添加 CRX 扩展失败"
+    }
   }
 }

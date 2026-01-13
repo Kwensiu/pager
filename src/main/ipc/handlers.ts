@@ -1,10 +1,18 @@
-import { ipcMain } from 'electron'
 import { URL } from 'url'
 import { get as httpRequest } from 'https'
 import { get as httpRequestHttp } from 'http'
-import { storeService } from '../services'
+import { ipcMain } from 'electron'
+import type {
+  PrimaryGroup,
+  SecondaryGroup,
+  Website,
+  WindowState,
+  Settings,
+  WebsiteOrderUpdate
+} from '../types/store'
 
-export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
+export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): Promise<void> {
+  const { storeService } = await import('../services')
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
@@ -15,6 +23,23 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
     }
   })
 
+  // 对话框相关 IPC
+  ipcMain.handle('dialog:open-directory', async (_, options?: Electron.OpenDialogOptions) => {
+    const { dialog } = await import('electron')
+    return dialog.showOpenDialog(mainWindow!, {
+      ...options,
+      properties: ['openDirectory']
+    })
+  })
+
+  ipcMain.handle('dialog:open-file', async (_, options?: Electron.OpenDialogOptions) => {
+    const { dialog } = await import('electron')
+    return dialog.showOpenDialog(mainWindow!, {
+      ...options,
+      properties: ['openFile']
+    })
+  })
+
   // ===== Store 相关 IPC 处理器 =====
 
   // 获取所有主要分组
@@ -23,7 +48,7 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   })
 
   // 保存所有主要分组
-  ipcMain.handle('store:set-primary-groups', (_, groups: any[]) => {
+  ipcMain.handle('store:set-primary-groups', (_, groups: PrimaryGroup[]) => {
     return storeService.setPrimaryGroups(groups)
   })
 
@@ -33,14 +58,17 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   })
 
   // 添加主要分组
-  ipcMain.handle('store:add-primary-group', (_, group: any) => {
+  ipcMain.handle('store:add-primary-group', (_, group: Partial<PrimaryGroup>) => {
     return storeService.addPrimaryGroup(group)
   })
 
   // 更新主要分组
-  ipcMain.handle('store:update-primary-group', (_, groupId: string, updates: any) => {
-    return storeService.updatePrimaryGroup(groupId, updates)
-  })
+  ipcMain.handle(
+    'store:update-primary-group',
+    (_, groupId: string, updates: Partial<PrimaryGroup>) => {
+      return storeService.updatePrimaryGroup(groupId, updates)
+    }
+  )
 
   // 删除主要分组
   ipcMain.handle('store:delete-primary-group', (_, groupId: string) => {
@@ -48,14 +76,20 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   })
 
   // 添加次要分组
-  ipcMain.handle('store:add-secondary-group', (_, primaryGroupId: string, secondaryGroup: any) => {
-    return storeService.addSecondaryGroup(primaryGroupId, secondaryGroup)
-  })
+  ipcMain.handle(
+    'store:add-secondary-group',
+    (_, primaryGroupId: string, secondaryGroup: SecondaryGroup) => {
+      return storeService.addSecondaryGroup(primaryGroupId, secondaryGroup)
+    }
+  )
 
   // 更新次要分组
-  ipcMain.handle('store:update-secondary-group', (_, secondaryGroupId: string, updates: any) => {
-    return storeService.updateSecondaryGroup(secondaryGroupId, updates)
-  })
+  ipcMain.handle(
+    'store:update-secondary-group',
+    (_, secondaryGroupId: string, updates: Partial<SecondaryGroup>) => {
+      return storeService.updateSecondaryGroup(secondaryGroupId, updates)
+    }
+  )
 
   // 删除次要分组
   ipcMain.handle('store:delete-secondary-group', (_, secondaryGroupId: string) => {
@@ -63,17 +97,20 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   })
 
   // 在主要分组中添加网站
-  ipcMain.handle('store:add-website-to-primary', (_, primaryGroupId: string, website: any) => {
+  ipcMain.handle('store:add-website-to-primary', (_, primaryGroupId: string, website: Website) => {
     return storeService.addWebsiteToPrimaryGroup(primaryGroupId, website)
   })
 
   // 在次要分组中添加网站
-  ipcMain.handle('store:add-website-to-secondary', (_, secondaryGroupId: string, website: any) => {
-    return storeService.addWebsiteToSecondaryGroup(secondaryGroupId, website)
-  })
+  ipcMain.handle(
+    'store:add-website-to-secondary',
+    (_, secondaryGroupId: string, website: Website) => {
+      return storeService.addWebsiteToSecondaryGroup(secondaryGroupId, website)
+    }
+  )
 
   // 更新网站
-  ipcMain.handle('store:update-website', (_, websiteId: string, updates: any) => {
+  ipcMain.handle('store:update-website', (_, websiteId: string, updates: Partial<Website>) => {
     return storeService.updateWebsite(websiteId, updates)
   })
 
@@ -99,7 +136,7 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   )
 
   // 批量更新网站排序
-  ipcMain.handle('store:batch-update-website-orders', (_, updates: any[]) => {
+  ipcMain.handle('store:batch-update-website-orders', (_, updates: WebsiteOrderUpdate[]) => {
     return storeService.batchUpdateWebsiteOrders(updates)
   })
 
@@ -109,7 +146,7 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   })
 
   // 设置窗口状态
-  ipcMain.handle('store:set-window-state', (_, state: any) => {
+  ipcMain.handle('store:set-window-state', (_, state: Partial<WindowState>) => {
     return storeService.setWindowState(state)
   })
 
@@ -119,12 +156,12 @@ export function registerIpcHandlers(mainWindow: Electron.BrowserWindow): void {
   })
 
   // 更新设置
-  ipcMain.handle('store:update-settings', (_, updates: any) => {
+  ipcMain.handle('store:update-settings', (_, updates: Partial<Settings>) => {
     return storeService.updateSettings(updates)
   })
 
   // 重置为默认值
-  ipcMain.handle('store:reset-to-defaults', (_, defaultGroups: any[]) => {
+  ipcMain.handle('store:reset-to-defaults', (_, defaultGroups: PrimaryGroup[]) => {
     return storeService.resetToDefaults(defaultGroups)
   })
 

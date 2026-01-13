@@ -29,14 +29,27 @@ interface WebViewContainerProps {
   onGoForward?: () => void
   onOpenExternal?: () => void
   onNavigate?: (url: string) => void
+  onExtensionClick?: () => void
 }
 
 export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps>(
-  ({ url, isLoading, onRefresh, onGoBack, onGoForward, onOpenExternal, onNavigate }, ref) => {
+  (
+    {
+      url,
+      isLoading,
+      onRefresh,
+      onGoBack,
+      onGoForward,
+      onOpenExternal,
+      onNavigate,
+      onExtensionClick
+    },
+    ref
+  ) => {
     const webviewRef = useRef<WebViewElement>(null)
 
-    // 创建唯一标识符，基于 URL 的主机名
-    const partition = useMemo(() => `persist:webview-${new URL(url).hostname}`, [url])
+    // 使用固定的共享 session，以便扩展可以在所有 webview 中工作
+    const partition = 'persist:webview-shared'
 
     // 使用 URL 作为 key 的一部分，确保 URL 变化时重新创建 webview
     const webviewKey = useMemo(() => `${partition}-${url}`, [partition, url])
@@ -268,6 +281,7 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
           onNavigate={handleNavigate}
           canGoBack={true}
           canGoForward={true}
+          onExtensionClick={onExtensionClick}
         />
 
         {/* 内容区域 - 修复顶部溢出问题 */}
@@ -281,6 +295,9 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
             allowpopups={true.toString()}
             // eslint-disable-next-line react/no-unknown-property
             partition={partition}
+            // 启用扩展支持
+            // @ts-ignore - webpreferences is a valid webview attribute
+            webpreferences="contextIsolation=yes, nodeIntegration=no, javascript=yes"
           />
         </div>
       </div>

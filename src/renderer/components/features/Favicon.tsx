@@ -127,7 +127,7 @@ const Favicon: FC<FaviconProps> = ({ url, className }) => {
 
   if (loading) {
     return (
-      <div className="flex h-4 w-4 items-center justify-center rounded bg-primary/10">
+      <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/10">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
@@ -185,7 +185,7 @@ const Favicon: FC<FaviconProps> = ({ url, className }) => {
 
   // 默认图标
   return (
-    <div className="flex h-4 w-4 items-center justify-center rounded bg-primary/10">
+    <div className="flex h-6 w-6 items-center justify-center rounded bg-primary/10">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         width="16"

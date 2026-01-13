@@ -24,7 +24,7 @@ const SidebarHeader: React.FC<SidebarHeaderProps> = ({
   const { state } = useSidebar()
 
   return (
-    <UISidebarHeader className="border-b px-3 h-[53px]">
+    <UISidebarHeader className="border-b px-1 h-[53px]">
       <div className="flex items-center h-full">
         <SidebarTrigger className="h-9 w-9 shrink-0">
           {state === 'expanded' ? (

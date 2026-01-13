@@ -4,6 +4,9 @@ import { Switch } from '@/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 import { Button } from '@/ui/button'
 import { useI18n } from '@/i18n/useI18n'
+import { Plug } from 'lucide-react'
+import { ExtensionManager } from '@/components/features/ExtensionManager'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui/dialog'
 
 export interface SidebarSettingsProps {
   showDebugOptions: boolean
@@ -23,6 +26,8 @@ export default function SidebarSettings({
   onClearCache
 }: SidebarSettingsProps): React.ReactElement {
   const { t, changeLanguage, getCurrentLanguage } = useI18n()
+  const [showExtensionManager, setShowExtensionManager] = useState(false)
+
   // 从 localStorage 加载初始设置
   const loadInitialSettings = (): {
     theme: 'light' | 'dark' | 'system'
@@ -32,6 +37,8 @@ export default function SidebarSettings({
     enableJavaScript: boolean
     allowPopups: boolean
     collapsedSidebarMode: 'all' | 'expanded'
+    enableExtensions: boolean
+    autoLoadExtensions: boolean
   } => {
     const savedSettings = localStorage.getItem('settings')
     if (savedSettings) {
@@ -43,7 +50,10 @@ export default function SidebarSettings({
         saveSession: parsed.saveSession !== undefined ? parsed.saveSession : true,
         enableJavaScript: parsed.enableJavaScript !== undefined ? parsed.enableJavaScript : true,
         allowPopups: parsed.allowPopups !== undefined ? parsed.allowPopups : true,
-        collapsedSidebarMode: parsed.collapsedSidebarMode || 'all'
+        collapsedSidebarMode: parsed.collapsedSidebarMode || 'all',
+        enableExtensions: parsed.enableExtensions !== undefined ? parsed.enableExtensions : true,
+        autoLoadExtensions:
+          parsed.autoLoadExtensions !== undefined ? parsed.autoLoadExtensions : true
       }
     }
     return {
@@ -53,7 +63,9 @@ export default function SidebarSettings({
       saveSession: true,
       enableJavaScript: true,
       allowPopups: true,
-      collapsedSidebarMode: 'all'
+      collapsedSidebarMode: 'all',
+      enableExtensions: true,
+      autoLoadExtensions: true
     }
   }
 
@@ -67,6 +79,36 @@ export default function SidebarSettings({
   const [collapsedSidebarMode, setCollapsedSidebarMode] = useState<'all' | 'expanded'>(
     initialSettings.collapsedSidebarMode
   )
+  const [enableExtensions, setEnableExtensions] = useState(initialSettings.enableExtensions)
+  const [autoLoadExtensions, setAutoLoadExtensions] = useState(initialSettings.autoLoadExtensions)
+
+  // 从主进程加载扩展设置
+  useEffect(() => {
+    const loadExtensionSettings = async (): Promise<void> => {
+      try {
+        const result = await window.api.extension.getSettings()
+        if (result.success && result.settings) {
+          setEnableExtensions(result.settings.enableExtensions)
+          setAutoLoadExtensions(result.settings.autoLoadExtensions)
+        }
+      } catch (error) {
+        console.error('Failed to load extension settings:', error)
+      }
+    }
+    loadExtensionSettings()
+  }, [])
+
+  // 处理扩展设置变化
+  const handleExtensionSettingsChange = async (
+    key: 'enableExtensions' | 'autoLoadExtensions',
+    value: boolean
+  ): Promise<void> => {
+    try {
+      await window.api.extension.updateSettings({ [key]: value })
+    } catch (error) {
+      console.error('Failed to update extension settings:', error)
+    }
+  }
 
   // 应用主题和保存设置到localStorage
   useEffect(() => {
@@ -94,7 +136,9 @@ export default function SidebarSettings({
       saveSession,
       enableJavaScript,
       allowPopups,
-      collapsedSidebarMode
+      collapsedSidebarMode,
+      enableExtensions,
+      autoLoadExtensions
     }
 
     localStorage.setItem('settings', JSON.stringify(updatedSettings))
@@ -105,7 +149,9 @@ export default function SidebarSettings({
     saveSession,
     enableJavaScript,
     allowPopups,
-    collapsedSidebarMode
+    collapsedSidebarMode,
+    enableExtensions,
+    autoLoadExtensions
   ])
 
   // 处理语言更改
@@ -141,6 +187,8 @@ export default function SidebarSettings({
     setTheme('system')
     setLanguage('zh')
     setCollapsedSidebarMode('all')
+    setEnableExtensions(true)
+    setAutoLoadExtensions(true)
   }
 
   return (
@@ -314,6 +362,53 @@ export default function SidebarSettings({
           </div>
         </div>
 
+        {/* 扩展设置 */}
+        <div className="border rounded-lg p-4 dark:border-gray-700 bg-card text-card-foreground">
+          <h2 className="text-lg font-semibold mb-4 text-foreground">{t('settings.extensions')}</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-foreground">{t('settings.enableExtensions')}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.enableExtensionsDescription')}
+                </p>
+              </div>
+              <Switch
+                checked={enableExtensions}
+                onCheckedChange={(checked) => {
+                  setEnableExtensions(checked)
+                  handleExtensionSettingsChange('enableExtensions', checked)
+                }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-foreground">{t('settings.autoLoadExtensions')}</Label>
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.autoLoadExtensionsDescription')}
+                </p>
+              </div>
+              <Switch
+                checked={autoLoadExtensions}
+                onCheckedChange={(checked) => {
+                  setAutoLoadExtensions(checked)
+                  handleExtensionSettingsChange('autoLoadExtensions', checked)
+                }}
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => setShowExtensionManager(true)}
+            >
+              <Plug className="h-4 w-4" />
+              {t('settings.manageExtensions')}
+            </Button>
+          </div>
+        </div>
+
         {/* 数据管理 */}
         <div className="border rounded-lg p-4 dark:border-gray-700 bg-card text-card-foreground">
           <h2 className="text-lg font-semibold mb-4 text-foreground">
@@ -375,6 +470,17 @@ export default function SidebarSettings({
           </div>
         </div>
       </div>
+
+      {/* 扩展管理对话框 */}
+      <Dialog open={showExtensionManager} onOpenChange={setShowExtensionManager}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>{t('extensions.title')}</DialogTitle>
+            <DialogDescription>{t('extensions.description')}</DialogDescription>
+          </DialogHeader>
+          <ExtensionManager open={showExtensionManager} onOpenChange={setShowExtensionManager} />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

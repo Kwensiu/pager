@@ -1,9 +1,10 @@
 // 拖拽排序相关类型定义
+import type { SecondaryGroup, Website } from '@/types/website'
 
 export interface DragDropItem {
   id: string
   type: 'secondaryGroup' | 'website'
-  data?: any
+  data?: SecondaryGroup | Website
 }
 
 export interface DragDropState {
@@ -30,19 +31,19 @@ export interface SortableItemProps {
 
 export interface SortableSecondaryGroupProps {
   id: string
-  secondaryGroup: any // 实际类型应该是 SecondaryGroup
+  secondaryGroup: SecondaryGroup
   onToggle?: (id: string) => void
   onContextMenu?: (e: React.MouseEvent, id: string) => void
-  onWebsiteClick?: (website: any) => void
+  onWebsiteClick?: (website: Website) => void
   onAddWebsite?: (groupId: string, isSecondaryGroup: boolean) => void
   activeWebsiteId?: string | null
 }
 
 export interface SortableWebsiteItemProps {
   id: string
-  website: any // 实际类型应该是 Website
+  website: Website
   secondaryGroupId: string
-  onClick?: (website: any) => void
+  onClick?: (website: Website) => void
   onContextMenu?: (e: React.MouseEvent, id: string) => void
   active?: boolean
 }

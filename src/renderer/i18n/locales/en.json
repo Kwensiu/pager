@@ -113,10 +113,102 @@
     "version": "Version: 0.0.2",
     "electronVersion": "Electron: v39.2.7",
     "chromiumVersion": "Chromium: v142.0.7444.235",
-    "nodeVersion": "Node.js: v22.21.1"
+    "nodeVersion": "Node.js: v22.21.1",
+    "enableExtensions": "Enable Extensions",
+    "enableExtensionsDescription": "Allow loading and using Chrome extensions, including Tampermonkey scripts",
+    "manageExtensions": "Manage Extensions",
+    "manageExtensionsDescription": "View, add, remove installed extensions",
+    "extensionsPath": "Extensions Path",
+    "extensionsPathDescription": "Custom extension storage path",
+    "autoLoadExtensions": "Auto Load Extensions",
+    "autoLoadExtensionsDescription": "Automatically load enabled extensions on startup"
   },
   "confirmDialog": {
     "clearDataTitle": "Confirm Clear Data",
     "clearDataDescription": "Are you sure you want to clear all data? This will delete all saved websites and groups. This action cannot be undone."
+  },
+  "extensions": {
+    "title": "Extension Manager",
+    "description": "Manage installed Chrome extensions, including Tampermonkey scripts",
+    "addExtension": "Add Extension",
+    "addExtensionDescription": "Select extension folder containing manifest.json or ZIP file",
+    "noExtensions": "No extensions installed",
+    "extensionName": "Extension Name",
+    "extensionVersion": "Version",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "remove": "Remove",
+    "selectExtensionFolder": "Select Extension Folder",
+    "selectExtensionZip": "Select Extension ZIP File",
+    "selectExtensionCrx": "Select Extension CRX File",
+    "invalidExtension": "Invalid extension",
+    "extensionAdded": "Extension added",
+    "extensionRemoved": "Extension removed",
+    "extensionToggled": "Extension status updated",
+    "confirmRemove": "Confirm Remove Extension",
+    "confirmRemoveDescription": "Are you sure you want to remove this extension? This action cannot be undone.",
+    "loadingExtensions": "Loading extensions...",
+    "extensionPath": "Extension Path",
+    "extensionZip": "Extension ZIP File",
+    "extensionCrx": "Extension CRX File",
+    "installMode": "Install Mode",
+    "installFromFolder": "Folder",
+    "installFromZip": "ZIP",
+    "installFromCrx": "CRX",
+    "permissions": "Permissions",
+    "description": "Description",
+    "validation": {
+      "pathNotExist": "Extension path does not exist",
+      "manifestNotFound": "manifest.json file not found",
+      "nameRequired": "Extension name is required",
+      "versionRequired": "Extension version is required",
+      "manifestVersionRequired": "manifest_version field is missing",
+      "validationFailed": "Extension validation failed",
+      "alreadyExists": "Extension already exists"
+    },
+    "status": {
+      "loading": "Loading",
+      "loaded": "Loaded",
+      "unloaded": "Unloaded",
+      "error": "Error"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "openFolder": "Open Folder",
+      "reload": "Reload",
+      "export": "Export",
+      "import": "Import"
+    },
+    "details": {
+      "title": "Extension Details",
+      "id": "Extension ID",
+      "author": "Author",
+      "homepage": "Homepage",
+      "icons": "Icons",
+      "contentScripts": "Content Scripts",
+      "backgroundScripts": "Background Scripts",
+      "webAccessibleResources": "Web Accessible Resources"
+    },
+    "tips": {
+      "howToAdd": "How to add extensions?",
+      "howToAddDescription": "Click the \"Add Extension\" button and select the extension folder containing manifest.json. Supports standard Chrome extension format.",
+      "tampermonkey": "Supports Tampermonkey Scripts",
+      "tampermonkeyDescription": "You can install the Tampermonkey extension to use userscripts and enhance your web browsing experience.",
+      "restartRequired": "Some extensions require restarting the app to take effect"
+    },
+    "errors": {
+      "loadFailed": "Failed to load extension",
+      "removeFailed": "Failed to remove extension",
+      "toggleFailed": "Failed to toggle extension status",
+      "unknownError": "Unknown error",
+      "invalidCrxFile": "Invalid CRX file",
+      "crxMagicMismatch": "CRX file format is incorrect",
+      "unsupportedCrxVersion": "Unsupported CRX version",
+      "crxHeaderTooLarge": "CRX header size exceeds file size",
+      "failedToValidateCrx": "Failed to validate CRX extension",
+      "failedToAddCrx": "Failed to add CRX extension"
+    }
   }
 }
