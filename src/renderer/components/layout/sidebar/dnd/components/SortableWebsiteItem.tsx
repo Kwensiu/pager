@@ -1,7 +1,6 @@
 import React, { memo, useCallback } from 'react'
 import { Website } from '@/types/website'
 import { DragHandle } from './DragHandle'
-import { DropIndicator } from './DropIndicator'
 import { useWebsiteDnd } from '../hooks/useWebsiteDnd'
 import { Favicon } from '@/components/features/Favicon'
 import {
@@ -49,22 +48,14 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
   showDragHandle = true,
   isCollapsed = false
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    style,
-    dragHandleStyle,
-    isDragging,
-    isOver,
-    insertPosition
-  } = useWebsiteDnd({
-    id: website.id,
-    website,
-    secondaryGroupId,
-    primaryGroupId,
-    disabled
-  })
+  const { attributes, listeners, setNodeRef, style, dragHandleStyle, isDragging, isOver } =
+    useWebsiteDnd({
+      id: website.id,
+      website,
+      secondaryGroupId,
+      primaryGroupId,
+      disabled
+    })
 
   // 处理点击事件 - 使用useCallback避免不必要的重新创建
   const handleClick = useCallback((): void => {
@@ -118,13 +109,7 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
         >
           {/* 放置指示器 - 根据insertPosition显示在顶部或底部 */}
           {isOver && !isDragging && (
-            <DropIndicator
-              isActive={isOver}
-              position={insertPosition === 'above' ? 'top' : 'bottom'}
-              type="over"
-              animated
-              showArrow={false}
-            />
+            <div className="absolute inset-0 bg-primary/10 rounded-md pointer-events-none animate-pulse" />
           )}
 
           {/* 拖拽手柄 - 折叠状态下隐藏 */}
@@ -192,7 +177,17 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
 }
 
 // 使用memo包装组件以提高性能
-export const SortableWebsiteItem = memo(SortableWebsiteItemComponent)
+export const SortableWebsiteItem = memo(SortableWebsiteItemComponent, (prevProps, nextProps) => {
+  // 自定义比较函数，只在必要时重新渲染
+  return (
+    prevProps.website.id === nextProps.website.id &&
+    prevProps.website.name === nextProps.website.name &&
+    prevProps.website.url === nextProps.website.url &&
+    prevProps.active === nextProps.active &&
+    prevProps.disabled === nextProps.disabled &&
+    prevProps.isCollapsed === nextProps.isCollapsed
+  )
+})
 
 // 简化版本，用于列表渲染
 export const SimpleSortableWebsiteItem: React.FC<{
@@ -277,7 +272,7 @@ export const SortableWebsiteList: React.FC<SortableWebsiteListProps> = ({
           onClick={onWebsiteClick}
           onEdit={onWebsiteEdit}
           onDelete={onWebsiteDelete}
-          showDragHandle={true} // 修复：二级分组内的网站按钮应该显示拖拽手柄
+          showDragHandle={true}
           isCollapsed={isCollapsed}
         />
       ))}

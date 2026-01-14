@@ -3,8 +3,8 @@ import { Folder, ChevronRight, ChevronDown } from 'lucide-react'
 import { SecondaryGroup, Website } from '@/types/website'
 import { SortableWebsiteList } from './SortableWebsiteItem'
 import { DragHandle } from './DragHandle'
-import { DropIndicator } from './DropIndicator'
 import { useSecondaryGroupDnd } from '../hooks/useSecondaryGroupDnd'
+import { SortableContainer } from '../contexts/DragDropContext'
 
 interface SortableSecondaryGroupProps {
   /** 二级分组数据 */
@@ -33,7 +33,7 @@ interface SortableSecondaryGroupProps {
   isCollapsed?: boolean
 }
 
-export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
+const SortableSecondaryGroupComponent: React.FC<SortableSecondaryGroupProps> = ({
   secondaryGroup,
   active = false,
   disabled = false,
@@ -97,7 +97,7 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
     >
       {/* 放置指示器 */}
       {isOver && !isDragging && (
-        <DropIndicator isActive={isOver} position="bottom" type="over" animated />
+        <div className="absolute inset-0 bg-primary/10 rounded-lg pointer-events-none animate-pulse" />
       )}
 
       {/* 分组头部 */}
@@ -174,16 +174,18 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
         <div className="pl-2 pr-2 pb-2">
           {/* 网站列表 */}
           {secondaryGroup.websites.length > 0 && (
-            <SortableWebsiteList
-              websites={secondaryGroup.websites}
-              secondaryGroupId={secondaryGroup.id}
-              activeWebsiteId={activeWebsiteId}
-              onWebsiteClick={onWebsiteClick}
-              onWebsiteEdit={onWebsiteEdit}
-              onWebsiteDelete={onWebsiteDelete}
-              className="space-y-1"
-              isCollapsed={isCollapsed}
-            />
+            <SortableContainer items={secondaryGroup.websites.map((w) => w.id)}>
+              <SortableWebsiteList
+                websites={secondaryGroup.websites}
+                secondaryGroupId={secondaryGroup.id}
+                activeWebsiteId={activeWebsiteId}
+                onWebsiteClick={onWebsiteClick}
+                onWebsiteEdit={onWebsiteEdit}
+                onWebsiteDelete={onWebsiteDelete}
+                className="space-y-1"
+                isCollapsed={isCollapsed}
+              />
+            </SortableContainer>
           )}
 
           {/* 添加网站按钮 - 折叠状态下隐藏 */}
@@ -231,6 +233,23 @@ export const SortableSecondaryGroup: React.FC<SortableSecondaryGroupProps> = ({
     </div>
   )
 }
+
+// 使用 memo 包装组件以提高性能
+export const SortableSecondaryGroup = React.memo(
+  SortableSecondaryGroupComponent,
+  (prevProps, nextProps) => {
+    // 自定义比较函数，只在必要时重新渲染
+    return (
+      prevProps.secondaryGroup.id === nextProps.secondaryGroup.id &&
+      prevProps.secondaryGroup.name === nextProps.secondaryGroup.name &&
+      prevProps.secondaryGroup.expanded === nextProps.secondaryGroup.expanded &&
+      prevProps.secondaryGroup.websites.length === nextProps.secondaryGroup.websites.length &&
+      prevProps.active === nextProps.active &&
+      prevProps.disabled === nextProps.disabled &&
+      prevProps.isCollapsed === nextProps.isCollapsed
+    )
+  }
+)
 
 // 简化版本，用于列表渲染
 export const SimpleSortableSecondaryGroup: React.FC<{

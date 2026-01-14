@@ -17,14 +17,13 @@ interface UseWebsiteDndReturn {
   attributes: Record<string, any>
   listeners: Record<string, any>
   setNodeRef: (node: HTMLElement | null) => void
-  transform: string | null
-  transition: string | null
+  transform: string | undefined
+  transition: string | undefined
 
   // 状态
   isDragging: boolean
   isOver: boolean
   isSorting: boolean
-  insertPosition: 'above' | 'below' | undefined // 插入位置：上方或下方
 
   // 样式
   style: React.CSSProperties
@@ -100,23 +99,20 @@ export function useWebsiteDnd({
   }, [id])
 
   // 从拖拽上下文中获取插入位置
-  const insertPosition: 'above' | 'below' | undefined = shouldShowDropIndicator
-    ? dragState.insertPosition
-    : undefined
+  // 已移除未使用的insertPosition变量
 
   return {
     // 拖拽相关属性
     attributes: attributes || {},
     listeners: listeners || {},
     setNodeRef,
-    transform: CSS.Transform.toString(transform) || null,
-    transition: transition || null,
+    transform: CSS.Transform.toString(transform),
+    transition,
 
     // 状态
     isDragging,
     isOver: shouldShowDropIndicator, // 使用计算后的值
     isSorting,
-    insertPosition,
 
     // 样式
     style,

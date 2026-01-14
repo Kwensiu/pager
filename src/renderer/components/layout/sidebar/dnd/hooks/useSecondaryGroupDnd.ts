@@ -14,8 +14,8 @@ interface UseSecondaryGroupDndReturn {
   attributes: any
   listeners: any
   setNodeRef: (node: HTMLElement | null) => void
-  transform: string | null
-  transition: string | null
+  transform: string | undefined
+  transition: string | undefined
 
   // 状态
   isDragging: boolean
@@ -87,8 +87,8 @@ export function useSecondaryGroupDnd({
     attributes,
     listeners,
     setNodeRef,
-    transform: CSS.Transform.toString(transform) || null,
-    transition: transition || null,
+    transform: CSS.Transform.toString(transform),
+    transition,
 
     // 状态
     isDragging,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -25,12 +25,22 @@ const EditSecondaryGroupDialog: React.FC<EditSecondaryGroupDialogProps> = ({
   group,
   onSave
 }) => {
-  // Initialize name from group prop - will reset when group.id changes due to key prop
+  // Initialize name from group prop
   const [name, setName] = useState(group?.name ?? '')
+
+  // Reset name when group changes or dialog opens/closes
+  useEffect(() => {
+    if (open && group) {
+      setName(group.name ?? '')
+    } else if (!open) {
+      // Reset when dialog closes
+      setName('')
+    }
+  }, [open, group])
 
   const handleSave = (): void => {
     if (!group) return
-    const updatedGroup = { ...group, name }
+    const updatedGroup = { ...group, name, updatedAt: Date.now() }
     onSave(updatedGroup)
     onOpenChange(false)
   }

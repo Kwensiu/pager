@@ -41,6 +41,34 @@
             }
           ]
         }
+      ],
+      "websites": [
+        {
+          "name": "Google",
+          "url": "https://www.google.com",
+          "fingerprintEnabled": false,
+          "fingerprintMode": "balanced",
+          "order": 0,
+          "id": "website-1768412011369",
+          "createdAt": 1768412011369,
+          "updatedAt": 1768412011369
+        },
+        {
+          "id": "github",
+          "name": "GitHub",
+          "url": "https://github.com",
+          "order": 1,
+          "createdAt": 1768157091206,
+          "updatedAt": 1768157091206
+        },
+        {
+          "name": "图片压缩",
+          "url": "https://squoosh.app/",
+          "order": 2,
+          "id": "website-1768160993388",
+          "createdAt": 1768160993388,
+          "updatedAt": 1768161270777
+        }
       ]
     },
     {

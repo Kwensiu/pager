@@ -342,15 +342,15 @@ export function useSidebarLogic({
   const confirmDeleteSecondaryGroup = () => {
     if (!dialogManagement.secondaryGroupConfirmDelete.secondaryGroupId) return
 
-    setPrimaryGroups((prevGroups) =>
-      prevGroups.map((pg) => ({
-        ...pg,
-        secondaryGroups: pg.secondaryGroups.filter(
-          (sg) => sg.id !== dialogManagement.secondaryGroupConfirmDelete.secondaryGroupId
-        )
-      }))
-    )
+    const updatedGroups = primaryGroups.map((pg) => ({
+      ...pg,
+      secondaryGroups: pg.secondaryGroups.filter(
+        (sg) => sg.id !== dialogManagement.secondaryGroupConfirmDelete.secondaryGroupId
+      )
+    }))
 
+    setPrimaryGroups(updatedGroups)
+    storageService.setPrimaryGroups(updatedGroups)
     dialogManagement.closeConfirmDeleteSecondaryGroup()
   }
 
@@ -358,20 +358,16 @@ export function useSidebarLogic({
     dialogManagement.closeConfirmDeleteSecondaryGroup()
   }
 
-  const handleSaveSecondaryGroup = () => {
-    if (!dialogManagement.editingSecondaryGroup) return
+  const handleSaveSecondaryGroup = (updatedGroup: SecondaryGroup) => {
+    const updatedGroups = primaryGroups.map((pg) => ({
+      ...pg,
+      secondaryGroups: pg.secondaryGroups.map((sg) =>
+        sg.id === updatedGroup.id ? { ...updatedGroup } : sg
+      )
+    }))
 
-    setPrimaryGroups((prevGroups) =>
-      prevGroups.map((pg) => ({
-        ...pg,
-        secondaryGroups: pg.secondaryGroups.map((sg) =>
-          sg.id === dialogManagement.editingSecondaryGroup?.id
-            ? { ...dialogManagement.editingSecondaryGroup }
-            : sg
-        )
-      }))
-    )
-
+    setPrimaryGroups(updatedGroups)
+    storageService.setPrimaryGroups(updatedGroups)
     dialogManagement.closeSecondaryGroupEditDialog()
   }
 

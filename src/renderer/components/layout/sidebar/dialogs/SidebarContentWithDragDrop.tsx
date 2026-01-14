@@ -17,6 +17,7 @@ import { SortableWebsiteItem } from '../dnd/components/SortableWebsiteItem'
 import { SortableEmptyPlaceholder } from '../dnd/components/SortableEmptyPlaceholder'
 import { getSortedSecondaryGroups } from '../dnd/utils/migrationUtils'
 import { DragEndResult } from '../dnd/types/dnd.types'
+import { SortingService } from '../dnd/services/sortingService'
 
 export interface SidebarContentWithDragDropProps {
   activePrimaryGroup: PrimaryGroup | null
@@ -224,10 +225,16 @@ const DragDropSidebarContentInner: React.FC<SidebarContentWithDragDropProps> = (
 
 // 主组件，提供拖拽上下文
 const SidebarContentWithDragDrop: React.FC<SidebarContentWithDragDropProps> = (props) => {
-  const { activePrimaryGroup, primaryGroups, onGroupsUpdate, onSecondaryGroupReorder } = props
+  const {
+    activePrimaryGroup,
+    primaryGroups,
+    onGroupsUpdate,
+    onSecondaryGroupReorder,
+    onWebsiteReorder
+  } = props
 
   const handleDragEnd = (result: DragEndResult): void => {
-    // 这里需要实际处理拖拽结果
+    // 使用排序服务处理拖拽结果
     if (!result || !activePrimaryGroup) {
       return
     }
@@ -240,302 +247,16 @@ const SidebarContentWithDragDrop: React.FC<SidebarContentWithDragDropProps> = (p
 
     if (type === 'secondaryGroup') {
       // 处理二级分组拖拽
-      const targetIndex = activePrimaryGroup.secondaryGroups.findIndex((g) => g.id === overId)
-      if (targetIndex === -1) {
-        return
-      }
-
-      // 重新排序二级分组
-      const updatedSecondaryGroups = [...activePrimaryGroup.secondaryGroups]
-      const sourceIndex = updatedSecondaryGroups.findIndex((g) => g.id === activeId)
-      if (sourceIndex === -1) {
-        return
-      }
-
-      // 移动分组
-      const [movedGroup] = updatedSecondaryGroups.splice(sourceIndex, 1)
-      updatedSecondaryGroups.splice(targetIndex, 0, movedGroup)
-
-      // 更新order字段
-      const reorderedGroups = updatedSecondaryGroups.map((group, index) => ({
-        ...group,
-        order: index
-      }))
-
-      // 更新主要分组
-      const updatedPrimaryGroups = primaryGroups.map((pg) =>
-        pg.id === activePrimaryGroup.id ? { ...pg, secondaryGroups: reorderedGroups } : pg
-      )
-
-      // 调用回调更新数据
-      onGroupsUpdate(updatedPrimaryGroups)
-
-      if (onSecondaryGroupReorder) {
-        onSecondaryGroupReorder(activePrimaryGroup.id, reorderedGroups)
-      }
+      SortingService.handleSecondaryGroupDrag(result, activePrimaryGroup, primaryGroups, {
+        onGroupsUpdate,
+        onSecondaryGroupReorder
+      })
     } else if (type === 'website') {
       // 处理网站拖拽
-      // 找到网站所属的分组（源分组）
-      let sourceSecondaryGroup: SecondaryGroup | null = null
-      let isFromPrimaryGroup = false
-
-      // 首先检查是否来自一级分类
-      if (activePrimaryGroup.websites?.some((w) => w.id === activeId)) {
-        isFromPrimaryGroup = true
-      } else {
-        // 如果不是来自一级分类，查找二级分组
-        for (const secondaryGroup of activePrimaryGroup.secondaryGroups) {
-          if (secondaryGroup.websites.some((w) => w.id === activeId)) {
-            sourceSecondaryGroup = secondaryGroup
-            break
-          }
-        }
-      }
-
-      if (!sourceSecondaryGroup && !isFromPrimaryGroup) {
-        return
-      }
-
-      // 查找目标位置
-      // 情况1：拖拽到一级分类的网站列表中（overId是一级分类下的网站ID）
-      let targetIsPrimaryGroup = false
-      let targetPrimaryGroupWebsiteIndex = -1
-
-      if (activePrimaryGroup.websites?.some((w) => w.id === overId)) {
-        targetIsPrimaryGroup = true
-        targetPrimaryGroupWebsiteIndex = activePrimaryGroup.websites.findIndex(
-          (w) => w.id === overId
-        )
-      }
-
-      // 情况1b：拖拽到空的一级分类区域（当一级分类没有网站时）
-      if (!targetIsPrimaryGroup && overId === 'primary-group-empty') {
-        targetIsPrimaryGroup = true
-        targetPrimaryGroupWebsiteIndex = 0 // 拖拽到空列表的第一个位置
-      }
-
-      // 情况2：拖拽到二级分组
-      let targetSecondaryGroup: SecondaryGroup | null = null
-      let targetWebsiteIndex = -1
-
-      if (!targetIsPrimaryGroup) {
-        for (const secondaryGroup of activePrimaryGroup.secondaryGroups) {
-          // 情况2a：overId是网站ID，且该网站在这个分组中
-          const websiteIndex = secondaryGroup.websites.findIndex((w) => w.id === overId)
-          if (websiteIndex !== -1) {
-            targetSecondaryGroup = secondaryGroup
-            targetWebsiteIndex = websiteIndex
-            break
-          }
-          // 情况2b：overId是分组ID本身（当拖拽到空分组时）
-          if (secondaryGroup.id === overId) {
-            targetSecondaryGroup = secondaryGroup
-            targetWebsiteIndex = secondaryGroup.websites.length // 拖拽到分组末尾
-            break
-          }
-        }
-      }
-
-      // 如果还没找到目标，尝试其他方式
-      if (!targetIsPrimaryGroup && !targetSecondaryGroup) {
-        // 可能是拖拽到分组之间的空隙，这里暂时返回
-        return
-      }
-
-      // 获取要移动的网站
-      let movedWebsite: Website | null = null
-
-      if (isFromPrimaryGroup) {
-        // 从一级分类中移除网站
-        const primaryGroupWebsites = activePrimaryGroup.websites ?? []
-        const sourceIndex = primaryGroupWebsites.findIndex((w) => w.id === activeId)
-        if (sourceIndex === -1) return
-
-        const sourceWebsites = [...primaryGroupWebsites]
-        ;[movedWebsite] = sourceWebsites.splice(sourceIndex, 1)
-
-        // 更新一级分类的网站列表
-        const updatedPrimaryWebsites = sourceWebsites.map((website, index) => ({
-          ...website,
-          order: index
-        }))
-
-        // 更新主要分组
-        const updatedPrimaryGroups = primaryGroups.map((pg) =>
-          pg.id === activePrimaryGroup.id ? { ...pg, websites: updatedPrimaryWebsites } : pg
-        )
-
-        // 临时保存更新后的分组（稍后根据目标位置再更新）
-        let finalPrimaryGroups = updatedPrimaryGroups
-
-        // 根据目标位置处理
-        if (targetIsPrimaryGroup) {
-          // 在一级分类内移动
-          const targetWebsites = [...updatedPrimaryWebsites]
-          let targetIndex = targetPrimaryGroupWebsiteIndex
-
-          // 调整目标索引（因为已经从源位置移除了网站）
-          if (sourceIndex < targetIndex) {
-            targetIndex--
-          }
-
-          targetWebsites.splice(targetIndex, 0, { ...movedWebsite!, order: targetIndex })
-
-          const reorderedWebsites = targetWebsites.map((website, index) => ({
-            ...website,
-            order: index
-          }))
-
-          finalPrimaryGroups = primaryGroups.map((pg) =>
-            pg.id === activePrimaryGroup.id ? { ...pg, websites: reorderedWebsites } : pg
-          )
-        } else if (targetSecondaryGroup) {
-          // 从一级分类拖拽到二级分组
-          const targetWebsites = [...targetSecondaryGroup.websites]
-          targetWebsites.splice(targetWebsiteIndex, 0, movedWebsite!)
-
-          const updatedTargetWebsites = targetWebsites.map((website, index) => ({
-            ...website,
-            order: index
-          }))
-
-          finalPrimaryGroups = primaryGroups.map((pg) => {
-            if (pg.id === activePrimaryGroup.id) {
-              const updatedSecondaryGroups = pg.secondaryGroups.map((sg) =>
-                sg.id === targetSecondaryGroup!.id ? { ...sg, websites: updatedTargetWebsites } : sg
-              )
-              return {
-                ...pg,
-                websites: updatedPrimaryWebsites,
-                secondaryGroups: updatedSecondaryGroups
-              }
-            }
-            return pg
-          })
-        }
-
-        // 调用回调更新数据
-        onGroupsUpdate(finalPrimaryGroups)
-      } else if (sourceSecondaryGroup) {
-        // 从二级分组中移除网站
-        const sourceIndex = sourceSecondaryGroup.websites.findIndex((w) => w.id === activeId)
-        if (sourceIndex === -1) return
-
-        const sourceWebsites = [...sourceSecondaryGroup.websites]
-        ;[movedWebsite] = sourceWebsites.splice(sourceIndex, 1)
-
-        const updatedSourceWebsites = sourceWebsites.map((website, index) => ({
-          ...website,
-          order: index
-        }))
-
-        // 根据目标位置处理
-        if (targetIsPrimaryGroup) {
-          // 从二级分组拖拽到一级分类
-          const targetWebsites = [...(activePrimaryGroup.websites || [])]
-          targetWebsites.splice(targetPrimaryGroupWebsiteIndex, 0, movedWebsite!)
-
-          const updatedTargetWebsites = targetWebsites.map((website, index) => ({
-            ...website,
-            order: index
-          }))
-
-          // 更新主要分组
-          const updatedPrimaryGroups = primaryGroups.map((pg) => {
-            if (pg.id === activePrimaryGroup.id) {
-              const updatedSecondaryGroups = pg.secondaryGroups.map((sg) =>
-                sg.id === sourceSecondaryGroup!.id ? { ...sg, websites: updatedSourceWebsites } : sg
-              )
-              return {
-                ...pg,
-                websites: updatedTargetWebsites,
-                secondaryGroups: updatedSecondaryGroups
-              }
-            }
-            return pg
-          })
-
-          // 调用回调更新数据
-          onGroupsUpdate(updatedPrimaryGroups)
-        } else if (targetSecondaryGroup) {
-          // 在二级分组之间移动
-          if (sourceSecondaryGroup.id === targetSecondaryGroup.id) {
-            // 同一个分组内的拖拽
-            const targetIndex = targetWebsiteIndex
-
-            // 调整目标索引（因为已经从源位置移除了网站）
-            let adjustedTargetIndex = targetIndex
-            if (sourceIndex < targetIndex) {
-              adjustedTargetIndex--
-            }
-
-            const targetWebsites = [...updatedSourceWebsites]
-            targetWebsites.splice(adjustedTargetIndex, 0, {
-              ...movedWebsite!,
-              order: adjustedTargetIndex
-            })
-
-            const reorderedWebsites = targetWebsites.map((website, index) => ({
-              ...website,
-              order: index
-            }))
-
-            // 更新二级分组
-            const updatedSecondaryGroups = activePrimaryGroup.secondaryGroups.map((sg) =>
-              sg.id === sourceSecondaryGroup!.id ? { ...sg, websites: reorderedWebsites } : sg
-            )
-
-            // 更新主要分组
-            const updatedPrimaryGroups = primaryGroups.map((pg) =>
-              pg.id === activePrimaryGroup.id
-                ? { ...pg, secondaryGroups: updatedSecondaryGroups }
-                : pg
-            )
-
-            // 调用回调更新数据
-            onGroupsUpdate(updatedPrimaryGroups)
-
-            if (props.onWebsiteReorder) {
-              props.onWebsiteReorder(sourceSecondaryGroup.id, reorderedWebsites)
-            }
-          } else {
-            // 跨分组拖拽
-            const targetWebsites = [...targetSecondaryGroup.websites]
-            targetWebsites.splice(targetWebsiteIndex, 0, movedWebsite!)
-
-            const updatedTargetWebsites = targetWebsites.map((website, index) => ({
-              ...website,
-              order: index
-            }))
-
-            // 更新两个分组的网站列表
-            const updatedSecondaryGroups = activePrimaryGroup.secondaryGroups.map((sg) => {
-              if (sg.id === sourceSecondaryGroup.id) {
-                return { ...sg, websites: updatedSourceWebsites }
-              } else if (sg.id === targetSecondaryGroup!.id) {
-                return { ...sg, websites: updatedTargetWebsites }
-              }
-              return sg
-            })
-
-            // 更新主要分组
-            const updatedPrimaryGroups = primaryGroups.map((pg) =>
-              pg.id === activePrimaryGroup.id
-                ? { ...pg, secondaryGroups: updatedSecondaryGroups }
-                : pg
-            )
-
-            // 调用回调更新数据
-            onGroupsUpdate(updatedPrimaryGroups)
-
-            // 触发网站重新排序回调
-            if (props.onWebsiteReorder) {
-              props.onWebsiteReorder(sourceSecondaryGroup.id, updatedSourceWebsites)
-              props.onWebsiteReorder(targetSecondaryGroup.id, updatedTargetWebsites)
-            }
-          }
-        }
-      }
+      SortingService.handleWebsiteDrag(result, activePrimaryGroup, primaryGroups, {
+        onGroupsUpdate,
+        onWebsiteReorder
+      })
     }
   }
 
