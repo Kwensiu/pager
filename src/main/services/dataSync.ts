@@ -10,6 +10,7 @@ import type { Website, Shortcut, Settings } from '../../shared/types/store'
  */
 class DataSyncService {
   private readonly ALLOWED_PROPS = [
+    // 网站相关属性
     'url',
     'name',
     'icon',
@@ -18,7 +19,49 @@ class DataSyncService {
     'order',
     'jsCode',
     'proxy',
-    'isOpen'
+    'isOpen',
+    'id',
+    'primaryGroupId',
+    'secondaryGroupId',
+    'children',
+    
+    // 设置相关属性
+    'theme',
+    'language',
+    'autoUpdate',
+    'minimizeToTray',
+    'collapsedSidebarMode',
+    'fingerprintEnabled',
+    'fingerprintMode',
+    'shortcutsEnabled',
+    'shortcutAlwaysOnTop',
+    'shortcutMiniMode',
+    'trayEnabled',
+    'trayShowNotifications',
+    'windowAlwaysOnTop',
+    'windowMiniMode',
+    'windowAdsorptionEnabled',
+    'windowAdsorptionSensitivity',
+    'memoryOptimizerEnabled',
+    'memoryCleanInterval',
+    'maxInactiveTime',
+    'autoSyncEnabled',
+    'syncInterval',
+    'autoLaunchEnabled',
+    'proxyEnabled',
+    'proxyRules',
+    'autoCheckUpdates',
+    'updateCheckInterval',
+    'sessionIsolationEnabled',
+    'crashReportingEnabled',
+    'autoRestartOnCrash',
+    'enableJavaScript',
+    'allowPopups',
+    'saveSession',
+    'clearCacheOnExit',
+    'enableExtensions',
+    'autoLoadExtensions',
+    'showDebugOptions'
   ]
 
   /**
@@ -49,6 +92,16 @@ class DataSyncService {
       console.error('Failed to export configuration:', error)
       return false
     }
+  }
+
+  /**
+   * 导出所有数据到 JSON 字符串
+   * @param data 要导出的数据
+   * @returns 导出的 JSON 字符串
+   */
+  exportDataToString(data: Record<string, unknown>): string {
+    // 不进行数据过滤，直接返回所有数据
+    return JSON.stringify(data, null, 2)
   }
 
   /**

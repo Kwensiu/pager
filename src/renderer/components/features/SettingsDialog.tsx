@@ -32,6 +32,59 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const [activeTab, setActiveTab] = useState('general')
   const { settings, updateSettings } = useSettings()
   const [showExtensionManager, setShowExtensionManager] = useState(false)
+  
+  // 获取数据路径
+  const [dataPath, setDataPath] = useState('')
+  
+  // 组件加载时获取数据路径
+  React.useEffect(() => {
+    const fetchDataPath = async () => {
+      try {
+        const { api } = window
+        if (api?.store?.getDataPath) {
+          const result = await api.store.getDataPath()
+          if (result.success) {
+            setDataPath(result.path || '')
+            updateSettings({ dataPath: result.path || '' })
+          } else {
+            setDataPath('获取路径失败')
+          }
+        }
+      } catch (error) {
+        console.error('Failed to get data path:', error)
+        setDataPath('获取路径失败')
+      }
+    }
+    
+    fetchDataPath()
+  }, [])
+  
+  // 打开数据目录
+  const openDataDirectory = async () => {
+    try {
+      const { api } = window
+      if (api?.dialog?.openDirectory) {
+        const result = await api.dialog.openDirectory({
+          properties: ['openDirectory']
+        })
+        
+        if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
+          // 打开选定的目录
+          const { shell } = require('electron')
+          await shell.openPath(result.filePaths[0])
+        }
+      } else {
+        // 如果API不可用，尝试直接打开当前数据路径
+        if (dataPath) {
+          const { shell } = require('electron')
+          await shell.openPath(dataPath)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to open data directory:', error)
+      alert('打开数据目录失败')
+    }
+  }
 
   const saveSettings = async (): Promise<void> => {
     try {
@@ -159,33 +212,118 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const exportAllSettings = async (): Promise<void> => {
     try {
       const { api } = window
-      if (!api?.enhanced?.dataSync) {
+      if (!api?.store) {
         alert('数据同步功能不可用')
         return
       }
 
-      const result = await api.enhanced.dataSync.exportConfig({
-        includeCookies: true,
-        includeSettings: true
-      })
+      // 获取所有需要导出的数据
+      const [settings, primaryGroups] = await Promise.all([
+        api.store.getSettings(),
+        api.store.getPrimaryGroups()
+      ])
+
+      // 构建导出数据
+      const exportData = {
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        data: {
+          settings,
+          websites: primaryGroups,
+          includeCookies: true
+        }
+      }
 
       // 创建下载链接
-      const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' })
+      const jsonString = JSON.stringify(exportData, null, 2)
+      const blob = new Blob([jsonString], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `pager-settings-${new Date().toISOString().split('T')[0]}.json`
+      
+      // 使用本地时间格式：年月日时分秒
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const hours = String(now.getHours()).padStart(2, '0')
+      const minutes = String(now.getMinutes()).padStart(2, '0')
+      const seconds = String(now.getSeconds()).padStart(2, '0')
+      
+      a.download = `pager-settings-${year}-${month}-${day}-${hours}-${minutes}-${seconds}.json`
+      document.body.appendChild(a)
       a.click()
+      document.body.removeChild(a)
       URL.revokeObjectURL(url)
-
-      alert('设置导出成功')
     } catch (error) {
       alert(`导出失败: ${error instanceof Error ? error.message : '未知错误'}`)
     }
   }
 
+  const importAllSettings = async (): Promise<void> => {
+    try {
+      const { api } = window
+      if (!api?.store) {
+        alert('数据同步功能不可用')
+        return
+      }
+
+      // 打开文件选择对话框
+      const { canceled, filePaths } = await api.dialog.openFile({
+        title: '导入设置',
+        filters: [
+          { name: 'JSON 文件', extensions: ['json'] },
+          { name: '所有文件', extensions: ['*'] }
+        ]
+      })
+
+      if (canceled || filePaths.length === 0) {
+        return
+      }
+
+      const filePath = filePaths[0]
+      
+      // 使用 IPC 读取文件内容
+      const result = await (window as any).api.enhanced.fs.readFile(filePath)
+      
+      if (!result.success) {
+        throw new Error(result.error || '读取文件失败')
+      }
+      
+      const fileContent = result.content
+      const importData = JSON.parse(fileContent)
+
+      // 验证数据格式
+      if (!importData.version || !importData.data) {
+        alert('无效的配置文件格式')
+        return
+      }
+
+      // 确认导入
+      if (!confirm('确定要导入这些设置吗？这将覆盖当前的设置和网站数据。')) {
+        return
+      }
+
+      // 导入设置
+      if (importData.data.settings) {
+        await api.store.updateSettings(importData.data.settings)
+        // 应用设置
+        await saveSettings()
+      }
+
+      // 导入网站数据
+      if (importData.data.websites) {
+        await api.store.setPrimaryGroups(importData.data.websites)
+      }
+
+      alert('设置导入成功')
+    } catch (error) {
+      alert(`导入失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    }
+  }
+
   return (
-    <div className="p-6 h-full overflow-y-auto bg-background text-foreground">
+    <div className="p-6 h-full overflow-y-auto bg-background text-foreground sidebar-scrollbar">
       <h1 className="text-2xl font-bold mb-6 text-foreground">{t('settings.title') || '设置'}</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -689,11 +827,17 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="space-y-2">
               <Label>数据管理</Label>
+              <div className="text-sm text-muted-foreground mb-1">
+                数据存储路径: {settings.dataPath || '获取路径中...'}
+              </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button onClick={exportAllSettings} variant="outline" size="sm">
                   导出所有设置
                 </Button>
-                <Button onClick={handleResetToDefaults} variant="outline" size="sm">
+                <Button onClick={importAllSettings} variant="outline" size="sm">
+                  导入设置
+                </Button>
+                <Button onClick={handleResetToDefaults} variant="warning" size="sm">
                   恢复默认设置
                 </Button>
                 <Button
@@ -712,6 +856,13 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                   size="sm"
                 >
                   清除所有数据
+                </Button>
+                <Button
+                  onClick={openDataDirectory}
+                  variant="outline"
+                  size="sm"
+                >
+                  打开数据目录
                 </Button>
               </div>
             </div>

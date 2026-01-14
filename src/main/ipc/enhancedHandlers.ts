@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import fs from 'fs/promises'
 import { fingerprintService } from '../services/fingerprint'
 import { trayService } from '../services/tray'
 import { windowAdsorptionService } from '../services/windowAdsorption'
@@ -128,8 +129,21 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
     return dataSyncService.exportConfig(data || {})
   })
 
+  ipcMain.handle('data-sync:export-data', async (_, data?: Record<string, unknown>) => {
+    return dataSyncService.exportDataToString(data || {})
+  })
+
   ipcMain.handle('data-sync:import-config', async () => {
     return dataSyncService.importConfig()
+  })
+
+  ipcMain.handle('fs:read-file', async (_, filePath: string) => {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8')
+      return { success: true, content }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : '未知错误' }
+    }
   })
 
   ipcMain.handle('data-sync:export-cookies', async (_, websiteId: string, partition: string) => {

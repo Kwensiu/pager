@@ -86,6 +86,8 @@ declare global {
         // 清除数据相关
         clearAll: () => Promise<void>
         resetToDefaults: (defaultGroups: PrimaryGroup[]) => Promise<void>
+        // 获取数据路径
+        getDataPath: () => Promise<{ success: boolean; path?: string; error?: string }>
       }
       extension: {
         getAll: () => Promise<{ success: boolean; extensions: ExtensionInfo[]; error?: string }>

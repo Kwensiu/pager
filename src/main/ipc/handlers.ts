@@ -322,6 +322,18 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
     return storeService.resetToDefaults(defaultGroups)
   })
 
+  // 获取数据路径
+  ipcMain.handle('store:get-data-path', () => {
+    try {
+      const { app } = require('electron')
+      const path = app.getPath('userData')
+      return { success: true, path }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
   // ===== Favicon 相关 IPC 处理器 =====
 
   // 获取网站 favicon 的 IPC 处理器

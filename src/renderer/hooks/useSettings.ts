@@ -7,6 +7,7 @@ interface Settings {
   autoUpdate: boolean
   minimizeToTray: boolean
   collapsedSidebarMode: 'all' | 'expanded'
+  dataPath: string
 
   // 浏览器指纹伪装
   fingerprintEnabled: boolean
@@ -77,6 +78,7 @@ const defaultSettings: Settings = {
   autoUpdate: true,
   minimizeToTray: true,
   collapsedSidebarMode: 'all',
+  dataPath: '',
 
   // 浏览器指纹伪装
   fingerprintEnabled: false,

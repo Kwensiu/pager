@@ -447,6 +447,18 @@ export const storeService = {
   async resetToDefaults(defaultGroups: PrimaryGroup[]) {
     const s = await getStore()
     s.set('primaryGroups', defaultGroups)
+  },
+
+  // 获取数据路径
+  async getDataPath() {
+    try {
+      const { app } = await import('electron')
+      const path = app.getPath('userData')
+      return { success: true, path }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
   }
 }
 

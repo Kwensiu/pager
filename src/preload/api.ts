@@ -103,7 +103,9 @@ export const api = {
     // 清除数据相关
     clearAll: () => ipcRenderer.invoke('store:clear-all'),
     resetToDefaults: (defaultGroups: PrimaryGroup[]) =>
-      ipcRenderer.invoke('store:reset-to-defaults', defaultGroups)
+      ipcRenderer.invoke('store:reset-to-defaults', defaultGroups),
+    // 获取数据路径
+    getDataPath: () => ipcRenderer.invoke('store:get-data-path')
   },
 
   // 扩展相关 API
@@ -132,6 +134,10 @@ export const api = {
 
   // ===== 增强功能 API =====
   enhanced: {
+    // 文件系统操作
+    fs: {
+      readFile: (filePath: string) => ipcRenderer.invoke('fs:read-file', filePath),
+    },
     // 浏览器指纹伪装
     fingerprint: {
       generate: (options?: Record<string, unknown>) =>
@@ -185,6 +191,8 @@ export const api = {
     dataSync: {
       exportConfig: (options?: Record<string, unknown>) =>
         ipcRenderer.invoke('data-sync:export-config', options),
+      exportData: (data: Record<string, unknown>) =>
+        ipcRenderer.invoke('data-sync:export-data', data),
       importConfig: (filePath: string) => ipcRenderer.invoke('data-sync:import-config', filePath),
       exportCookies: (websiteId?: string) =>
         ipcRenderer.invoke('data-sync:export-cookies', websiteId),
