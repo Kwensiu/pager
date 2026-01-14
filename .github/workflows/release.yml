@@ -13,29 +13,17 @@ on:
       platforms:
         description: 'Platforms to build'
         required: true
-        default: 'win,mac,linux'
+        default: 'win'
         type: choice
         options:
           - win
-          - mac
-          - linux
-          - win,mac,linux
 
 jobs:
   release:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: windows-latest
-            platform: win
-            artifact_name: windows
-          - os: macos-latest
-            platform: mac
-            artifact_name: mac
-          - os: ubuntu-latest
-            platform: linux
-            artifact_name: linux
+    runs-on: windows-latest
+    env:
+      PLATFORM: win
+      ARTIFACT_NAME: windows
 
     steps:
       - name: Checkout repository
@@ -83,19 +71,12 @@ jobs:
 
       - name: Build application
         run: |
-          $platform = "${{ matrix.platform }}"
-          if ($platform -eq "win") {
-            yarn build:win
-          } elseif ($platform -eq "mac") {
-            yarn build:mac
-          } elseif ($platform -eq "linux") {
-            yarn build:linux
-          }
+          yarn build:win
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}-build
+          name: ${{ env.ARTIFACT_NAME }}-build
           path: |
             dist/*.exe
             dist/*.dmg
@@ -129,7 +110,7 @@ jobs:
             - See commit history for details
 
             ### Downloads
-            Built artifacts for Windows, macOS, and Linux platforms.
+            Built artifacts for Windows platform.
           files: |
             artifacts/**/*
           draft: false

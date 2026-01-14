@@ -17,8 +17,6 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "yarn build && electron-builder --dir",
     "build:win": "yarn build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux",
     "tailwind:init": "tailwindcss init -p"
   },
   "dependencies": {
