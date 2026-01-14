@@ -17,6 +17,9 @@ export interface Website {
   partition?: string // Session 分区名称
   lastAccessTime?: number // 最后访问时间（用于内存优化）
   isOpen?: boolean // 是否在侧边栏中打开
+  // 指纹伪装设置
+  fingerprintEnabled?: boolean // 是否启用指纹伪装
+  fingerprintMode?: 'basic' | 'balanced' | 'advanced' // 指纹伪装模式
 }
 
 export interface SecondaryGroup {

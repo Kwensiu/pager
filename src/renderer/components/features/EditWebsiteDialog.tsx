@@ -10,8 +10,11 @@ import {
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
+import { Switch } from '@/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 import { Website } from '@/types/website'
 import { Favicon } from './Favicon'
+import { Fingerprint } from 'lucide-react'
 import { useI18n } from '@/core/i18n/useI18n'
 
 interface EditWebsiteDialogProps {
@@ -32,17 +35,23 @@ export function EditWebsiteDialog({
   const [url, setUrl] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [faviconUrl, setFaviconUrl] = useState('')
+  const [fingerprintEnabled, setFingerprintEnabled] = useState(false)
+  const [fingerprintMode, setFingerprintMode] = useState<'basic' | 'balanced' | 'advanced'>('balanced')
 
   useEffect(() => {
     if (website) {
       setName(website.name)
       setUrl(website.url)
       setFaviconUrl(website.favicon || website.url || '')
+      setFingerprintEnabled(website.fingerprintEnabled || false)
+      setFingerprintMode(website.fingerprintMode || 'balanced')
     } else {
       // 重置表单
       setName('')
       setUrl('')
       setFaviconUrl('')
+      setFingerprintEnabled(false)
+      setFingerprintMode('balanced')
     }
   }, [website])
 
@@ -53,7 +62,9 @@ export function EditWebsiteDialog({
       ...website,
       name,
       url,
-      favicon: faviconUrl || undefined
+      favicon: faviconUrl || undefined,
+      fingerprintEnabled,
+      fingerprintMode
     }
 
     onSave(updatedWebsite)
@@ -134,6 +145,42 @@ export function EditWebsiteDialog({
               <span className="text-sm truncate max-w-[200px]">{faviconUrl || t('noFavicon')}</span>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label className="flex items-center gap-2">
+                  <Fingerprint className="h-4 w-4" />
+                  {t('enhancedFeatures.websiteFingerprint.enabled')}
+                </Label>
+              </div>
+              <Switch
+                checked={fingerprintEnabled}
+                onCheckedChange={setFingerprintEnabled}
+              />
+            </div>
+          </div>
+
+          {fingerprintEnabled && (
+            <div className="space-y-2">
+              <Label htmlFor="fingerprint-mode">{t('enhancedFeatures.websiteFingerprint.mode')}</Label>
+              <Select
+                value={fingerprintMode}
+                onValueChange={(value: 'basic' | 'balanced' | 'advanced') =>
+                  setFingerprintMode(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="basic">{t('enhancedFeatures.websiteFingerprint.modeBasic')}</SelectItem>
+                  <SelectItem value="balanced">{t('enhancedFeatures.websiteFingerprint.modeBalanced')}</SelectItem>
+                  <SelectItem value="advanced">{t('enhancedFeatures.websiteFingerprint.modeAdvanced')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

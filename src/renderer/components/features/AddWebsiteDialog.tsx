@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Globe } from 'lucide-react'
+import { Globe, Fingerprint } from 'lucide-react'
 import { Button } from '@/ui/button'
 import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
@@ -11,6 +11,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/ui/dialog'
+import { Switch } from '@/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
 import { Website } from '@/types/website'
 import { useI18n } from '@/core/i18n/useI18n'
 
@@ -33,6 +35,8 @@ export function AddWebsiteDialog({
       name: '',
       url: '',
       description: '',
+      fingerprintEnabled: false,
+      fingerprintMode: 'balanced' as 'basic' | 'balanced' | 'advanced',
       errors: {} as { name?: string; url?: string }
     }
   })
@@ -79,6 +83,8 @@ export function AddWebsiteDialog({
         name: name.trim(),
         url: url.trim(),
         description: description.trim() || undefined,
+        fingerprintEnabled: fingerprintEnabled,
+        fingerprintMode: fingerprintMode,
         order: 0
       })
       onOpenChange(false)
@@ -134,6 +140,45 @@ export function AddWebsiteDialog({
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
             />
           </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="fingerprint-enabled" className="flex items-center gap-2">
+                  <Fingerprint className="h-4 w-4" />
+                  {t('enhancedFeatures.websiteFingerprint.enabled')}
+                </Label>
+              </div>
+              <Switch
+                id="fingerprint-enabled"
+                checked={formData.fingerprintEnabled}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, fingerprintEnabled: checked }))
+                }
+              />
+            </div>
+          </div>
+
+          {formData.fingerprintEnabled && (
+            <div className="grid gap-2">
+              <Label htmlFor="fingerprint-mode">{t('enhancedFeatures.websiteFingerprint.mode')}</Label>
+              <Select
+                value={formData.fingerprintMode}
+                onValueChange={(value: 'basic' | 'balanced' | 'advanced') =>
+                  setFormData((prev) => ({ ...prev, fingerprintMode: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="basic">{t('enhancedFeatures.websiteFingerprint.modeBasic')}</SelectItem>
+                  <SelectItem value="balanced">{t('enhancedFeatures.websiteFingerprint.modeBalanced')}</SelectItem>
+                  <SelectItem value="advanced">{t('enhancedFeatures.websiteFingerprint.modeAdvanced')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <DialogFooter>

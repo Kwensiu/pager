@@ -281,6 +281,15 @@
       "balanced": "Balanced Mode",
       "advanced": "Advanced Mode"
     },
+  "websiteFingerprint": {
+    "title": "Website Fingerprint Spoofing",
+    "description": "Enable fingerprint spoofing for specific websites",
+    "enabled": "Enable Fingerprint Spoofing",
+    "mode": "Spoofing Mode",
+    "modeBasic": "Basic Mode",
+    "modeBalanced": "Balanced Mode",
+    "modeAdvanced": "Advanced Mode"
+  },
     "shortcuts": {
       "title": "Global Shortcuts",
       "description": "Customize global shortcuts",
