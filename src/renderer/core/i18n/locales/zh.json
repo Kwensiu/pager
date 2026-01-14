@@ -152,6 +152,10 @@
     "installFromFolder": "文件夹",
     "installFromZip": "ZIP",
     "installFromCrx": "CRX",
+    "selectExtensionFolder": "选择扩展文件夹",
+    "selectExtensionZip": "选择扩展 ZIP 文件",
+    "selectExtensionCrx": "选择扩展 CRX 文件",
+    "invalidExtension": "无效的扩展",
     "permissions": "权限",
     "permissionsDescription": "描述",
     "isolation": {
@@ -266,8 +270,7 @@
     "memoryExceeded": "内存使用超限",
     "conflictDetected": "扩展冲突检测到",
     "invalidCrx": "CRX 文件格式无效",
-    "unsupportedVersion": "不支持的扩展版本",
-    "unknownError": "未知错误"
+    "unsupportedVersion": "不支持的扩展版本"
   },
   "enhancedFeatures": {
     "title": "增强功能",
@@ -281,15 +284,15 @@
       "balanced": "平衡模式",
       "advanced": "高级模式"
     },
-  "websiteFingerprint": {
-    "title": "网站指纹伪装",
-    "description": "为特定网站启用指纹伪装功能",
-    "enabled": "启用指纹伪装",
-    "mode": "伪装模式",
-    "modeBasic": "基础模式",
-    "modeBalanced": "平衡模式",
-    "modeAdvanced": "高级模式"
-  },
+    "websiteFingerprint": {
+      "title": "网站指纹伪装",
+      "description": "为特定网站启用指纹伪装功能",
+      "enabled": "启用指纹伪装",
+      "mode": "伪装模式",
+      "modeBasic": "基础模式",
+      "modeBalanced": "平衡模式",
+      "modeAdvanced": "高级模式"
+    },
     "shortcuts": {
       "title": "全局快捷键",
       "description": "自定义全局快捷键",

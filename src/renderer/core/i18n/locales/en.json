@@ -152,6 +152,10 @@
     "installFromFolder": "Folder",
     "installFromZip": "ZIP",
     "installFromCrx": "CRX",
+    "selectExtensionFolder": "Select Extension Folder",
+    "selectExtensionZip": "Select Extension ZIP File",
+    "selectExtensionCrx": "Select Extension CRX File",
+    "invalidExtension": "Invalid Extension",
     "permissions": "Permissions",
     "permissionsDescription": "Description",
     "isolation": {
@@ -266,8 +270,7 @@
     "memoryExceeded": "Memory usage exceeded",
     "conflictDetected": "Extension conflict detected",
     "invalidCrx": "Invalid CRX file format",
-    "unsupportedVersion": "Unsupported extension version",
-    "unknownError": "Unknown error"
+    "unsupportedVersion": "Unsupported extension version"
   },
   "enhancedFeatures": {
     "title": "Enhanced Features",
@@ -281,15 +284,15 @@
       "balanced": "Balanced Mode",
       "advanced": "Advanced Mode"
     },
-  "websiteFingerprint": {
-    "title": "Website Fingerprint Spoofing",
-    "description": "Enable fingerprint spoofing for specific websites",
-    "enabled": "Enable Fingerprint Spoofing",
-    "mode": "Spoofing Mode",
-    "modeBasic": "Basic Mode",
-    "modeBalanced": "Balanced Mode",
-    "modeAdvanced": "Advanced Mode"
-  },
+    "websiteFingerprint": {
+      "title": "Website Fingerprint Spoofing",
+      "description": "Enable fingerprint spoofing for specific websites",
+      "enabled": "Enable Fingerprint Spoofing",
+      "mode": "Spoofing Mode",
+      "modeBasic": "Basic Mode",
+      "modeBalanced": "Balanced Mode",
+      "modeAdvanced": "Advanced Mode"
+    },
     "shortcuts": {
       "title": "Global Shortcuts",
       "description": "Customize global shortcuts",

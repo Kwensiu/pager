@@ -43,7 +43,7 @@ export function AddWebsiteDialog({
 
   // 当对话框关闭再打开时，组件会重新挂载，因此状态会自动重置
 
-  const { name, url, description, errors } = formData
+  const { name, url, description, fingerprintEnabled, fingerprintMode, errors } = formData
 
   const validate = (): boolean => {
     const newErrors: { name?: string; url?: string } = {}
@@ -151,7 +151,7 @@ export function AddWebsiteDialog({
               </div>
               <Switch
                 id="fingerprint-enabled"
-                checked={formData.fingerprintEnabled}
+                checked={fingerprintEnabled}
                 onCheckedChange={(checked) =>
                   setFormData((prev) => ({ ...prev, fingerprintEnabled: checked }))
                 }
@@ -159,11 +159,13 @@ export function AddWebsiteDialog({
             </div>
           </div>
 
-          {formData.fingerprintEnabled && (
+          {fingerprintEnabled && (
             <div className="grid gap-2">
-              <Label htmlFor="fingerprint-mode">{t('enhancedFeatures.websiteFingerprint.mode')}</Label>
+              <Label htmlFor="fingerprint-mode">
+                {t('enhancedFeatures.websiteFingerprint.mode')}
+              </Label>
               <Select
-                value={formData.fingerprintMode}
+                value={fingerprintMode}
                 onValueChange={(value: 'basic' | 'balanced' | 'advanced') =>
                   setFormData((prev) => ({ ...prev, fingerprintMode: value }))
                 }
@@ -172,9 +174,15 @@ export function AddWebsiteDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="basic">{t('enhancedFeatures.websiteFingerprint.modeBasic')}</SelectItem>
-                  <SelectItem value="balanced">{t('enhancedFeatures.websiteFingerprint.modeBalanced')}</SelectItem>
-                  <SelectItem value="advanced">{t('enhancedFeatures.websiteFingerprint.modeAdvanced')}</SelectItem>
+                  <SelectItem value="basic">
+                    {t('enhancedFeatures.websiteFingerprint.modeBasic')}
+                  </SelectItem>
+                  <SelectItem value="balanced">
+                    {t('enhancedFeatures.websiteFingerprint.modeBalanced')}
+                  </SelectItem>
+                  <SelectItem value="advanced">
+                    {t('enhancedFeatures.websiteFingerprint.modeAdvanced')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

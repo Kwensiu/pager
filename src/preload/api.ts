@@ -36,6 +36,16 @@ export const api = {
   // 获取网站图标
   getFavicon: (url: string) => ipcRenderer.invoke('get-favicon', url),
 
+  // 批量预加载网站图标
+  preloadFavicons: (urls: string[], priority?: string[]) =>
+    ipcRenderer.invoke('preload-favicons', urls, priority),
+
+  // 获取 favicon 缓存统计信息
+  getFaviconStats: () => ipcRenderer.invoke('get-favicon-stats'),
+
+  // 清理 favicon 缓存
+  clearFaviconCache: () => ipcRenderer.invoke('clear-favicon-cache'),
+
   // Store 相关 API
   store: {
     // 主要分组相关
