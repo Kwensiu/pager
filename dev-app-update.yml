@@ -1,3 +1,4 @@
-provider: generic
-url: https://example.com/auto-updates
-updaterCacheDirName: pager-updater
+provider: github
+owner: Kwensiu
+repo: Pager
+updaterCacheDirName: Pager

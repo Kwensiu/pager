@@ -1,0 +1,137 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+' # 匹配 v1.0.0, v0.1.0 等格式
+  workflow_dispatch: # 手动触发
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
+        required: true
+        default: ''
+      platforms:
+        description: 'Platforms to build'
+        required: true
+        default: 'win,mac,linux'
+        type: choice
+        options:
+          - win
+          - mac
+          - linux
+          - win,mac,linux
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            artifact_name: windows
+          - os: macos-latest
+            platform: mac
+            artifact_name: mac
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: linux
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run lint and typecheck
+        run: |
+          yarn format
+          yarn lint
+          yarn typecheck
+
+      - name: Extract version from tag
+        if: github.event_name == 'push'
+        id: extract_version
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Set version for manual trigger
+        if: github.event_name == 'workflow_dispatch'
+        id: set_version
+        run: |
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          echo "tag=v${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+
+      - name: Update package.json version
+        run: |
+          $version = "${{ steps.extract_version.outputs.version || steps.set_version.outputs.version }}"
+          $packageJson = Get-Content package.json | ConvertFrom-Json
+          $packageJson.version = $version
+          $packageJson | ConvertTo-Json -Depth 100 | Set-Content package.json -Encoding UTF8
+
+      - name: Build application
+        run: |
+          $platform = "${{ matrix.platform }}"
+          if ($platform -eq "win") {
+            yarn build:win
+          } elseif ($platform -eq "mac") {
+            yarn build:mac
+          } elseif ($platform -eq "linux") {
+            yarn build:linux
+          }
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}-build
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.snap
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error
+
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.extract_version.outputs.tag || steps.set_version.outputs.tag }}
+          name: Release ${{ steps.extract_version.outputs.version || steps.set_version.outputs.version }}
+          body: |
+            ## Pager ${{ steps.extract_version.outputs.version || steps.set_version.outputs.version }}
+
+            ### Changes
+            - See commit history for details
+
+            ### Downloads
+            Built artifacts for Windows, macOS, and Linux platforms.
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
