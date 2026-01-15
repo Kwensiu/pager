@@ -208,17 +208,86 @@
     scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
   }
 
+  /* 扩展管理器专用滚动条 */
+  .extension-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .extension-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 0;
+  }
+
+  .extension-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.15);
+    border-radius: 5px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+    transition: all 0.3s ease;
+    opacity: 0;
+  }
+
+  .extension-scrollbar:hover::-webkit-scrollbar-thumb,
+  .extension-scrollbar:active::-webkit-scrollbar-thumb,
+  .extension-scrollbar:focus::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+
+  .extension-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.4);
+    border: 2px solid transparent;
+  }
+
+  .extension-scrollbar::-webkit-scrollbar-thumb:active {
+    background: rgba(100, 116, 139, 0.6);
+  }
+
+  .extension-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .extension-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.15) transparent;
+  }
+
+  .extension-scrollbar:hover {
+    scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
+  }
+
+  /* 暗色模式 */
+  .dark .extension-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.15);
+  }
+
+  .dark .extension-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.4);
+  }
+
+  .dark .extension-scrollbar::-webkit-scrollbar-thumb:active {
+    background: rgba(148, 163, 184, 0.6);
+  }
+
+  .dark .extension-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
+  }
+
+  .dark .extension-scrollbar:hover {
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
   /* 强制滚动条覆盖在内容之上 */
-  .custom-scrollbar,
-  .sidebar-scrollbar {
+  .custom-scrollbar.custom-scrollbar,
+  .sidebar-scrollbar.sidebar-scrollbar {
     overflow: overlay !important; /* 使用overlay而不是auto，让滚动条悬浮 */
   }
 
   /* 为不支持overlay的浏览器提供回退 */
   @supports not (overflow: overlay) {
-    .custom-scrollbar,
-    .sidebar-scrollbar {
-      overflow: auto;
+    .custom-scrollbar.custom-scrollbar,
+    .sidebar-scrollbar.sidebar-scrollbar {
+      overflow: auto !important;
       padding-right: 0 !important; /* 确保没有内边距 */
     }
   }

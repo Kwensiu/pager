@@ -50,7 +50,26 @@ export class ExtensionIsolationManager {
   private config: IsolationConfig
   private cleanupInterval: NodeJS.Timeout | null = null
   private sessionCounter: number = 0
-  private requestHandlers: Map<string, any> = new Map()
+  private requestHandlers = new Map<
+    string,
+    | ((
+        details: Electron.OnBeforeRequestListenerDetails,
+        callback: (response: { cancel: boolean }) => void
+      ) => void)
+    | ((
+        details: Electron.OnBeforeSendHeadersListenerDetails,
+        callback: (response: { requestHeaders: Record<string, string> }) => void
+      ) => void)
+    | ((
+        details: Electron.OnHeadersReceivedListenerDetails,
+        callback: (response: { responseHeaders: Record<string, string[]> }) => void
+      ) => void)
+    | ((
+        webContents: Electron.WebContents,
+        permission: string,
+        callback: (allow: boolean) => void
+      ) => void)
+  >()
   private sessionPoolInitialized: boolean = false
 
   constructor(
@@ -163,13 +182,13 @@ export class ExtensionIsolationManager {
   /**
    * 获取会话使用统计
    */
-  getSessionStats(): {
+  async getSessionStats(): Promise<{
     totalSessions: number
     activeSessions: number
     idleSessions: number
     memoryUsage: number
     sessionsByIsolationLevel: Record<ExtensionIsolationLevel, number>
-  } {
+  }> {
     const sessionsByIsolationLevel: Record<ExtensionIsolationLevel, number> = {} as any
 
     // 初始化统计对象
@@ -211,12 +230,18 @@ export class ExtensionIsolationManager {
   ): Promise<void> {
     // 配置网络限制
     if (restrictions.networkRestrictions) {
-      const beforeRequestHandler = (details: any, callback: any) => {
+      const beforeRequestHandler = (
+        details: Electron.OnBeforeRequestListenerDetails,
+        callback: (response: { cancel: boolean }) => void
+      ): void => {
         const shouldBlock = this.shouldBlockRequest(details.url, restrictions)
         callback({ cancel: shouldBlock })
       }
 
-      const beforeSendHeadersHandler = (details: any, callback: any) => {
+      const beforeSendHeadersHandler = (
+        details: Electron.OnBeforeSendHeadersListenerDetails,
+        callback: (response: { requestHeaders: Record<string, string> }) => void
+      ): void => {
         callback({ requestHeaders: details.requestHeaders })
       }
 
@@ -231,7 +256,7 @@ export class ExtensionIsolationManager {
 
     // 配置权限限制
     const permissionHandler = (
-      _webContents: any,
+      _webContents: Electron.WebContents,
       permission: string,
       callback: (allow: boolean) => void
     ): void => {
@@ -248,7 +273,10 @@ export class ExtensionIsolationManager {
 
     // 配置脚本注入检测
     if (restrictions.scriptInjectionDetection) {
-      const headersReceivedHandler = (details: any, callback: any) => {
+      const headersReceivedHandler = (
+        details: Electron.OnHeadersReceivedListenerDetails,
+        callback: (response: { responseHeaders: Record<string, string[]> }) => void
+      ): void => {
         const modifiedHeaders = this.detectAndBlockScriptInjection(details.responseHeaders)
         callback({ responseHeaders: modifiedHeaders })
       }
@@ -288,8 +316,8 @@ export class ExtensionIsolationManager {
           'webRequestBlocking',
           'proxy',
           'nativeMessaging',
-          'debugger',
-          'management'
+          'debugger'
+          // 移除 'management' 权限，允许扩展访问自己的选项页面
         ]
         restrictions.networkRestrictions = true
         restrictions.fileAccessRestrictions = true
@@ -299,8 +327,10 @@ export class ExtensionIsolationManager {
 
       case IsolationLevel.STANDARD:
         // 标准级别，允许基本权限但限制敏感操作
-        restrictions.blockedOrigins = ['file:///*', 'chrome://*']
-        restrictions.blockedPermissions = ['nativeMessaging', 'debugger', 'management']
+        restrictions.blockedOrigins = ['file:///*']
+        // 移除 'chrome://*' 阻止，允许扩展访问自己的 chrome-extension:// 页面
+        restrictions.blockedPermissions = ['nativeMessaging', 'debugger']
+        // 移除 'management' 权限，允许扩展访问自己的选项页面
         restrictions.networkRestrictions = true
         restrictions.fileAccessRestrictions = true
         break
@@ -329,6 +359,12 @@ export class ExtensionIsolationManager {
       )
     }
 
+    // 允许扩展访问自己的 chrome-extension:// URL
+    const extensionUrl = `chrome-extension://${extension.id}/*`
+    if (!restrictions.allowedOrigins.includes(extensionUrl)) {
+      restrictions.allowedOrigins.push(extensionUrl)
+    }
+
     return restrictions
   }
 
@@ -340,7 +376,14 @@ export class ExtensionIsolationManager {
       return false
     }
 
-    // 检查是否在阻止列表中
+    // 首先检查是否在允许列表中
+    for (const allowedOrigin of restrictions.allowedOrigins) {
+      if (this.urlMatchesPattern(url, allowedOrigin)) {
+        return false
+      }
+    }
+
+    // 然后检查是否在阻止列表中
     for (const blockedOrigin of restrictions.blockedOrigins) {
       if (this.urlMatchesPattern(url, blockedOrigin)) {
         return true

@@ -11,10 +11,54 @@ import type {
 export const api = {
   // 暴露 ipcRenderer 用于监听事件
   ipcRenderer: {
-    on: (channel: string, listener: (...args: any[]) => void) => ipcRenderer.on(channel, listener),
+    on: (channel: string, listener: (...args: unknown[]) => void) =>
+      ipcRenderer.on(channel, listener),
     removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
-    send: (channel: string, ...args: any[]) => ipcRenderer.send(channel, ...args),
-    invoke: (channel: string, ...args: any[]) => ipcRenderer.invoke(channel, ...args)
+    send: (channel: string, ...args: unknown[]) => ipcRenderer.send(channel, ...args),
+    invoke: (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args)
+  },
+
+  // Shell 相关 API
+  shell: {
+    openPath: (path: string) => ipcRenderer.invoke('shell:openPath', path)
+  },
+
+  // 扩展相关 API
+  extension: {
+    getAll: () => ipcRenderer.invoke('extension:getAll'),
+    add: (path: string) => ipcRenderer.invoke('extension:add', path),
+    remove: (id: string) => ipcRenderer.invoke('extension:remove', id),
+    toggle: (id: string, enabled: boolean) => ipcRenderer.invoke('extension:toggle', id, enabled),
+    validate: (path: string) => ipcRenderer.invoke('extension:validate', path),
+    getLoaded: () => ipcRenderer.invoke('extension:getLoaded'),
+    getSettings: () => ipcRenderer.invoke('extension:getSettings'),
+    updateSettings: (settings: { enableExtensions?: boolean; autoLoadExtensions?: boolean }) =>
+      ipcRenderer.invoke('extension:updateSettings', settings),
+    // 新增的增强功能API
+    getErrorStats: () => ipcRenderer.invoke('extension:getErrorStats'),
+    getPermissionStats: () => ipcRenderer.invoke('extension:getPermissionStats'),
+    clearErrorHistory: () => ipcRenderer.invoke('extension:clearErrorHistory'),
+    getWithPermissions: (id: string) => ipcRenderer.invoke('extension:getWithPermissions', id),
+    updatePermissionSettings: (id: string, permissions: string[], allowed: boolean) =>
+      ipcRenderer.invoke('extension:updatePermissionSettings', id, permissions, allowed),
+    // 隔离加载和卸载扩展
+    loadWithIsolation: (path: string, isolationLevel?: string) =>
+      ipcRenderer.invoke('extension:loadWithIsolation', path, isolationLevel),
+    unloadWithIsolation: (id: string) => ipcRenderer.invoke('extension:unloadWithIsolation', id),
+    // 配置页面相关
+    createConfigPage: (
+      extensionId: string,
+      extensionName: string,
+      extensionPath: string,
+      manifest: Record<string, unknown>
+    ) =>
+      ipcRenderer.invoke(
+        'extension:create-config-page',
+        extensionId,
+        extensionName,
+        extensionPath,
+        manifest
+      )
   },
 
   // WebView 相关 API
@@ -26,13 +70,18 @@ export const api = {
     goBack: () => ipcRenderer.send('webview:go-back'),
     goForward: () => ipcRenderer.send('webview:go-forward'),
     showContextMenu: (params: Electron.ContextMenuParams) =>
-      ipcRenderer.send('webview:show-context-menu', params)
+      ipcRenderer.send('webview:show-context-menu', params),
+    createExtensionOptions: (url: string, title: string) =>
+      ipcRenderer.invoke('window:create-extension-options', url, title),
+    openExtensionOptionsInMain: (url: string) =>
+      ipcRenderer.invoke('window:open-extension-options-in-main', url)
   },
 
   // 窗口管理
   window: {
     resize: () => ipcRenderer.send('window:resize'),
-    openDevTools: () => ipcRenderer.send('window:open-dev-tools')
+    openDevTools: () => ipcRenderer.send('window:open-dev-tools'),
+    loadExtensionUrl: (url: string) => ipcRenderer.invoke('window:load-extension-url', url)
   },
 
   // 对话框 API
@@ -116,30 +165,6 @@ export const api = {
       ipcRenderer.invoke('store:reset-to-defaults', defaultGroups),
     // 获取数据路径
     getDataPath: () => ipcRenderer.invoke('store:get-data-path')
-  },
-
-  // 扩展相关 API
-  extension: {
-    getAll: () => ipcRenderer.invoke('extension:getAll'),
-    add: (path: string) => ipcRenderer.invoke('extension:add', path),
-    remove: (id: string) => ipcRenderer.invoke('extension:remove', id),
-    toggle: (id: string, enabled: boolean) => ipcRenderer.invoke('extension:toggle', id, enabled),
-    validate: (path: string) => ipcRenderer.invoke('extension:validate', path),
-    getLoaded: () => ipcRenderer.invoke('extension:getLoaded'),
-    getSettings: () => ipcRenderer.invoke('extension:getSettings'),
-    updateSettings: (settings: { enableExtensions?: boolean; autoLoadExtensions?: boolean }) =>
-      ipcRenderer.invoke('extension:updateSettings', settings),
-    // 新增的增强功能API
-    getErrorStats: () => ipcRenderer.invoke('extension:getErrorStats'),
-    getPermissionStats: () => ipcRenderer.invoke('extension:getPermissionStats'),
-    clearErrorHistory: () => ipcRenderer.invoke('extension:clearErrorHistory'),
-    getWithPermissions: (id: string) => ipcRenderer.invoke('extension:getWithPermissions', id),
-    updatePermissionSettings: (id: string, permissions: string[], allowed: boolean) =>
-      ipcRenderer.invoke('extension:updatePermissionSettings', id, permissions, allowed),
-    // 隔离加载和卸载扩展
-    loadWithIsolation: (path: string, isolationLevel?: string) =>
-      ipcRenderer.invoke('extension:loadWithIsolation', path, isolationLevel),
-    unloadWithIsolation: (id: string) => ipcRenderer.invoke('extension:unloadWithIsolation', id)
   },
 
   // ===== 增强功能 API =====

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, Menu, shell, app } from 'electron'
 import type {
   PrimaryGroup,
   SecondaryGroup,
@@ -13,6 +13,25 @@ import { ExtensionManager } from '../extensions/extensionManager'
 import { ExtensionIsolationLevel } from '../../shared/types/store'
 
 const extensionManager = ExtensionManager.getInstance()
+
+interface ExtensionStructure {
+  id: string
+  path: string
+  files: Array<{ name: string; path: string; type: string; size?: number }>
+  directories: Array<{ name: string; path: string; files: string[]; type?: string }>
+}
+
+interface ExtensionManifest {
+  options_page?: string
+  permissions?: string[]
+  action?: {
+    default_popup?: string
+  }
+  browser_action?: {
+    default_popup?: string
+  }
+  [key: string]: unknown
+}
 
 export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): Promise<void> {
   const { storeService } = await import('../services')
@@ -233,12 +252,11 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
     console.log('Webview attached, setting up context menu listener')
 
     // 监听 webview 的右键菜单事件
-    webContents.on('context-menu', (event, params) => {
+    webContents.on('context-menu', (_, params) => {
       console.log('=== WebView Context Menu Event ===')
       console.log('Context menu triggered in webview:', params)
 
       // 构建右键菜单
-      const { Menu } = require('electron')
       const contextMenu = Menu.buildFromTemplate([
         {
           label: '后退',
@@ -311,7 +329,6 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
           label: '在外部浏览器中打开',
           click: () => {
             if (params.pageURL) {
-              const { shell } = require('electron')
               shell.openExternal(params.pageURL)
             }
           }
@@ -343,9 +360,6 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
       console.log('Main window available:', !!mainWindow)
       console.log('Main window webContents available:', !!mainWindow?.webContents)
 
-      const { Menu } = require('electron')
-
-      // 构建右键菜单
       const contextMenu = Menu.buildFromTemplate([
         {
           label: '后退',
@@ -427,7 +441,6 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
           label: '在外部浏览器中打开',
           click: () => {
             if (params.pageURL) {
-              const { shell } = require('electron')
               shell.openExternal(params.pageURL)
             }
           }
@@ -480,6 +493,690 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
   ipcMain.on('window:open-dev-tools', () => {
     if (mainWindow) {
       mainWindow.webContents.openDevTools()
+    }
+  })
+
+  // 在主窗口中加载扩展页面
+  ipcMain.handle('window:load-extension-url', async (_, url: string) => {
+    try {
+      if (mainWindow) {
+        console.log(`Loading extension URL in main window: ${url}`)
+        await mainWindow.webContents.loadURL(url)
+        return { success: true }
+      } else {
+        throw new Error('Main window not available')
+      }
+    } catch (error) {
+      console.error('Failed to load extension URL:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  })
+
+  // 创建扩展配置页面
+  ipcMain.handle(
+    'extension:create-config-page',
+    async (
+      _,
+      extensionId: string,
+      extensionName: string,
+      extensionPath: string,
+      manifest: ExtensionManifest
+    ) => {
+      const { BrowserWindow } = await import('electron')
+
+      console.log(`Creating config page for extension: ${extensionName}`)
+
+      try {
+        // 创建一个简单的配置页面
+        const configHtml = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${extensionName} - 配置页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .extension-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        .info-label {
+            font-weight: 600;
+            margin-right: 10px;
+            min-width: 100px;
+        }
+        .info-value {
+            color: #666;
+            word-break: break-all;
+        }
+        .config-section {
+            margin: 20px 0;
+        }
+        .config-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        .config-item {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .config-item h4 {
+            margin: 0 0 10px 0;
+            color: #34495e;
+        }
+        .config-item p {
+            margin: 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .actions {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn.secondary {
+            background: #95a5a6;
+        }
+        .btn.secondary:hover {
+            background: #7f8c8d;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>${extensionName}</h1>
+            <p>扩展配置页面</p>
+        </div>
+
+        <div class="warning">
+            <strong>注意：</strong>这是一个简化的配置页面。完整的扩展功能需要在 Chrome 环境中运行。
+        </div>
+
+        <div class="extension-info">
+            <div class="info-item">
+                <span class="info-label">扩展 ID:</span>
+                <span class="info-value">${extensionId}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">版本:</span>
+                <span class="info-value">${manifest.version || '未知'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">描述:</span>
+                <span class="info-value">${manifest.description || '无描述'}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">路径:</span>
+                <span class="info-value">${extensionPath}</span>
+            </div>
+            ${
+              manifest.homepage_url
+                ? `
+            <div class="info-item">
+                <span class="info-label">主页:</span>
+                <span class="info-value"><a href="${manifest.homepage_url}" target="_blank">${manifest.homepage_url}</a></span>
+            </div>
+            `
+                : ''
+            }
+        </div>
+
+        <div class="config-section">
+            <h3>配置选项</h3>
+            
+            ${
+              manifest.options_page
+                ? `
+            <div class="config-item">
+                <h4>选项页面</h4>
+                <p>扩展提供了专门的选项页面: ${manifest.options_page}</p>
+                <button class="btn" onclick="openOptionsPage()">打开原始选项页面</button>
+            </div>
+            `
+                : ''
+            }
+            
+            ${
+              manifest.action?.default_popup
+                ? `
+            <div class="config-item">
+                <h4>弹出页面</h4>
+                <p>扩展提供了弹出页面: ${manifest.action.default_popup}</p>
+                <button class="btn" onclick="openPopupPage()">打开弹出页面</button>
+            </div>
+            `
+                : ''
+            }
+            
+            ${
+              manifest.browser_action?.default_popup
+                ? `
+            <div class="config-item">
+                <h4>浏览器操作弹出页面</h4>
+                <p>扩展提供了浏览器操作弹出页面: ${manifest.browser_action.default_popup}</p>
+                <button class="btn" onclick="openBrowserActionPage()">打开弹出页面</button>
+            </div>
+            `
+                : ''
+            }
+        </div>
+
+        <div class="config-section">
+            <h3>权限信息</h3>
+            ${
+              manifest.permissions && manifest.permissions.length > 0
+                ? `
+            <div class="config-item">
+                <h4>所需权限</h4>
+                <ul>
+                    ${manifest.permissions.map((perm: string) => `<li>${perm}</li>`).join('')}
+                </ul>
+            </div>
+            `
+                : '<div class="config-item"><p>无特殊权限要求</p></div>'
+            }
+        </div>
+
+        <div class="actions">
+            <button class="btn secondary" onclick="openExtensionFolder()">打开扩展文件夹</button>
+            <button class="btn" onclick="closeWindow()">关闭窗口</button>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        function openOptionsPage() {
+            const path = '${extensionPath.replace(/\\/g, '\\\\')}/${manifest.options_page || ''}';
+            if (path) {
+                ipcRenderer.invoke('shell:openPath', path);
+            }
+        }
+        
+        function openPopupPage() {
+            const path = '${extensionPath.replace(/\\/g, '\\\\')}/${manifest.action?.default_popup || ''}';
+            if (path) {
+                ipcRenderer.invoke('shell:openPath', path);
+            }
+        }
+        
+        function openBrowserActionPage() {
+            const path = '${extensionPath.replace(/\\/g, '\\\\')}/${manifest.browser_action?.default_popup || ''}';
+            if (path) {
+                ipcRenderer.invoke('shell:openPath', path);
+            }
+        }
+        
+        function openExtensionFolder() {
+            const path = '${extensionPath.replace(/\\/g, '\\\\')}';
+            ipcRenderer.invoke('shell:openPath', path);
+        }
+        
+        function closeWindow() {
+            window.close();
+        }
+    </script>
+</body>
+</html>
+      `
+
+        // 创建新窗口显示配置页面
+        const configWindow = new BrowserWindow({
+          width: 900,
+          height: 700,
+          minWidth: 600,
+          minHeight: 400,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            webSecurity: true
+          },
+          title: `${extensionName} - 配置页面`,
+          show: false
+        })
+
+        // 加载配置页面
+        await configWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(configHtml)}`)
+
+        // 窗口准备好后显示
+        configWindow.once('ready-to-show', () => {
+          configWindow.show()
+          configWindow.focus()
+        })
+
+        return {
+          success: true,
+          windowId: configWindow.id
+        }
+      } catch (error) {
+        console.error('Failed to create config page:', error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }
+    }
+  )
+
+  // 打开文件或文件夹
+  ipcMain.handle('shell:openPath', async (_, path: string) => {
+    const { shell } = await import('electron')
+
+    try {
+      await shell.openPath(path)
+      return { success: true }
+    } catch (error) {
+      console.error('Failed to open path:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  })
+
+  // 检查扩展文件结构
+  ipcMain.handle(
+    'extension:inspect-structure',
+    async (_, extensionId: string, extensionPath: string) => {
+      const { readdir, stat } = await import('fs/promises')
+      const { join } = await import('path')
+
+      console.log(`Inspecting extension structure for: ${extensionId} at ${extensionPath}`)
+
+      try {
+        const structure: ExtensionStructure = {
+          id: extensionId,
+          path: extensionPath,
+          files: [],
+          directories: []
+        }
+
+        async function scanDirectory(dirPath: string, relativePath: string = ''): Promise<void> {
+          const items = await readdir(dirPath)
+
+          for (const item of items) {
+            const itemPath = join(dirPath, item)
+            const itemRelativePath = relativePath ? join(relativePath, item) : item
+            const stats = await stat(itemPath)
+
+            if (stats.isDirectory()) {
+              structure.directories.push({
+                name: item,
+                path: itemRelativePath,
+                files: [],
+                type: 'directory'
+              })
+              await scanDirectory(itemPath, itemRelativePath)
+            } else {
+              structure.files.push({
+                name: item,
+                path: itemRelativePath,
+                type: 'file',
+                size: stats.size
+              })
+            }
+          }
+        }
+
+        await scanDirectory(extensionPath)
+
+        // 查找可能的选项页面
+        const optionFiles = structure.files.filter(
+          (file) =>
+            file.name.toLowerCase().includes('option') ||
+            file.name.toLowerCase().includes('setting') ||
+            file.name.toLowerCase().includes('config') ||
+            file.name.toLowerCase().includes('popup') ||
+            file.name.toLowerCase().includes('index')
+        )
+
+        console.log(`Found ${optionFiles.length} potential option files:`, optionFiles)
+
+        return {
+          success: true,
+          structure,
+          optionFiles
+        }
+      } catch (error) {
+        console.error(`Failed to inspect extension structure: ${extensionId}`, error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }
+    }
+  )
+
+  // 在主窗口中打开扩展选项页面
+  ipcMain.handle(
+    'window:open-extension-options-in-main',
+    async (_, extensionId: string, optionsPath?: string) => {
+      console.log(`Opening extension options in main window for: ${extensionId}`)
+
+      if (!mainWindow) {
+        return {
+          success: false,
+          error: 'Main window not available'
+        }
+      }
+
+      try {
+        // 使用 Chrome 扩展 API 来打开选项页面
+        const script = `
+        console.log('Attempting to open extension options for:', '${extensionId}');
+        
+        // 尝试使用 Chrome 扩展 API
+        if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
+          console.log('Using chrome.runtime.sendMessage');
+          chrome.runtime.sendMessage('${extensionId}', { action: 'openOptions' }, (response) => {
+            console.log('Extension options response:', response);
+            if (chrome.runtime.lastError) {
+              console.error('Chrome runtime error:', chrome.runtime.lastError);
+            }
+          });
+        } else if (chrome && chrome.management && chrome.management.launchApp) {
+          console.log('Using chrome.management.launchApp');
+          chrome.management.launchApp('${extensionId}', (launchInfo) => {
+            console.log('Extension launched:', launchInfo);
+          });
+        } else {
+          console.log('Chrome APIs not available, trying direct navigation');
+          
+          // 如果 API 不可用，尝试直接导航
+          ${
+            optionsPath
+              ? `
+          console.log('Trying specific path:', '${optionsPath}');
+          try {
+            window.location.href = 'chrome-extension://${extensionId}/${optionsPath}';
+            console.log('Navigation to specific path completed');
+          } catch (e) {
+            console.error('Failed to load specific path:', e);
+          }`
+              : `
+          // 尝试常见的选项页面路径
+          const possiblePaths = [
+            'options.html',
+            'options/index.html',
+            'assets/options.html',
+            'popup.html',
+            'index.html',
+            'settings.html',
+            'config.html',
+            'preferences.html',
+            'page/options.html',
+            'src/options.html'
+          ];
+          
+          console.log('Trying possible paths:', possiblePaths);
+          
+          for (const path of possiblePaths) {
+            console.log('Trying path:', path);
+            try {
+              window.location.href = 'chrome-extension://${extensionId}/' + path;
+              console.log('Successfully navigated to:', path);
+              break;
+            } catch (e) {
+              console.log('Failed to load path:', path, e);
+            }
+          }
+          
+          // 如果所有路径都失败，尝试打开扩展根目录
+          console.log('All paths failed, trying extension root');
+          try {
+            window.location.href = 'chrome-extension://${extensionId}/';
+            console.log('Navigated to extension root');
+          } catch (e) {
+            console.error('Failed to navigate to extension root:', e);
+          }
+          `
+          }
+        }
+        
+        // 添加一个检查函数来验证页面是否加载成功
+        setTimeout(() => {
+          console.log('Current URL after navigation attempts:', window.location.href);
+          console.log('Page title:', document.title);
+        }, 1000);
+      `
+
+        await mainWindow.webContents.executeJavaScript(script)
+        console.log(`Extension options script executed for: ${extensionId}`)
+
+        return {
+          success: true
+        }
+      } catch (error) {
+        console.error(`Failed to open extension options in main window: ${extensionId}`, error)
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }
+    }
+  )
+
+  // 创建新窗口用于打开扩展选项页面
+  ipcMain.handle('window:create-extension-options', async (_, url: string, title: string) => {
+    const { BrowserWindow } = await import('electron')
+
+    console.log(`Creating extension options window for: ${url}`)
+
+    // 检查 URL 是否是 chrome-extension://
+    if (url.startsWith('chrome-extension://')) {
+      console.log('Chrome extension URL detected, using alternative approach')
+
+      // 对于 chrome-extension:// URL，我们需要在主窗口的 webContents 中加载
+      // 然后创建一个新窗口来显示内容
+
+      const optionsWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        minWidth: 600,
+        minHeight: 400,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          webSecurity: false, // 允许加载 chrome-extension:// URL
+          allowRunningInsecureContent: false,
+          experimentalFeatures: false
+        },
+        title: title,
+        show: false
+      })
+
+      // 添加加载事件监听
+      optionsWindow.webContents.on('did-start-loading', () => {
+        console.log(`Extension options window started loading: ${url}`)
+      })
+
+      optionsWindow.webContents.on('did-finish-load', () => {
+        console.log(`Extension options window finished loading: ${url}`)
+      })
+
+      optionsWindow.webContents.on('did-fail-load', (_, errorCode, errorDescription) => {
+        console.error(
+          `Extension options window failed to load: ${url}`,
+          errorCode,
+          errorDescription
+        )
+      })
+
+      // 窗口准备好后显示
+      optionsWindow.once('ready-to-show', () => {
+        console.log(`Extension options window ready to show: ${title}`)
+        optionsWindow.show()
+        optionsWindow.focus() // 确保窗口获得焦点
+      })
+
+      // 窗口关闭时清理
+      optionsWindow.on('closed', () => {
+        console.log(`Extension options window closed: ${title}`)
+      })
+
+      try {
+        // 尝试直接加载扩展 URL
+        await optionsWindow.loadURL(url)
+        console.log(`Extension options URL loaded successfully: ${url}`)
+      } catch (error) {
+        console.error(`Failed to load extension options URL: ${url}`, error)
+
+        // 如果直接加载失败，尝试创建一个简单的 HTML 页面来加载扩展内容
+        const fallbackHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+              .error { color: red; }
+              .info { color: #666; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <h1>扩展选项页面</h1>
+            <div class="error">
+              <p>无法直接加载扩展页面: ${url}</p>
+              <p>错误: ${error instanceof Error ? error.message : String(error)}</p>
+            </div>
+            <div class="info">
+              <p>请尝试以下方法：</p>
+              <ul>
+                <li>右键点击浏览器工具栏中的扩展图标</li>
+                <li>选择"选项"或"设置"</li>
+                <li>或者在扩展管理页面中点击"选项"</li>
+              </ul>
+            </div>
+          </body>
+          </html>
+        `
+
+        await optionsWindow.loadURL(
+          `data:text/html;charset=utf-8,${encodeURIComponent(fallbackHtml)}`
+        )
+        console.log('Fallback HTML page loaded')
+      }
+
+      return {
+        success: true,
+        windowId: optionsWindow.id
+      }
+    }
+
+    // 对于非 chrome-extension:// URL，使用原来的逻辑
+    const optionsWindow = new BrowserWindow({
+      width: 800,
+      height: 600,
+      minWidth: 600,
+      minHeight: 400,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true, // 修复类型检查错误
+        allowRunningInsecureContent: false,
+        experimentalFeatures: false
+      },
+      title: title,
+      show: false
+    })
+
+    // 添加加载事件监听
+    optionsWindow.webContents.on('did-start-loading', () => {
+      console.log(`Extension options window started loading: ${url}`)
+    })
+
+    optionsWindow.webContents.on('did-finish-load', () => {
+      console.log(`Extension options window finished loading: ${url}`)
+    })
+
+    optionsWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+      console.error(`Extension options window failed to load: ${url}`, errorCode, errorDescription)
+    })
+
+    // 窗口准备好后显示
+    optionsWindow.once('ready-to-show', () => {
+      console.log(`Extension options window ready to show: ${title}`)
+      optionsWindow.show()
+      optionsWindow.focus() // 确保窗口获得焦点
+    })
+
+    // 窗口关闭时清理
+    optionsWindow.on('closed', () => {
+      console.log(`Extension options window closed: ${title}`)
+    })
+
+    try {
+      // 加载扩展选项页面
+      await optionsWindow.loadURL(url)
+      console.log(`Extension options URL loaded successfully: ${url}`)
+    } catch (error) {
+      console.error(`Failed to load extension options URL: ${url}`, error)
+      optionsWindow.destroy()
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+
+    return {
+      success: true,
+      windowId: optionsWindow.id
     }
   })
 
@@ -628,7 +1325,6 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
   // 获取数据路径
   ipcMain.handle('store:get-data-path', () => {
     try {
-      const { app } = require('electron')
       const path = app.getPath('userData')
       return { success: true, path }
     } catch (error) {

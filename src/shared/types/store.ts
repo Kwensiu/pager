@@ -118,8 +118,21 @@ export interface ExtensionManifest {
   description?: string
   permissions?: string[]
   host_permissions?: string[]
+  options_page?: string
+  action?: {
+    default_popup?: string
+    default_title?: string
+  }
+  browser_action?: {
+    default_popup?: string
+    default_title?: string
+  }
+  background?: {
+    service_worker?: string
+    scripts?: string[]
+    persistent?: boolean
+  }
   content_scripts?: ContentScript[]
-  background?: BackgroundConfig
   icons?: Record<string, string>
 }
 

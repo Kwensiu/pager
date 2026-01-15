@@ -10,13 +10,13 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Info,
-  Settings
+  Info
 } from 'lucide-react'
 import { Button } from '@/ui/button'
 import { useI18n } from '@/core/i18n/useI18n'
 import { AddExtensionDialog } from './AddExtensionDialog'
 import { ConfirmDialog } from './ConfirmDialog'
+import type { ExtensionManifest } from '../../../shared/types/store'
 
 interface Extension {
   id: string
@@ -24,10 +24,7 @@ interface Extension {
   version: string
   path?: string
   enabled: boolean
-  manifest?: {
-    description?: string
-    permissions?: string[]
-  }
+  manifest?: ExtensionManifest
   session?: {
     id: string
     isolationLevel: string
@@ -46,20 +43,6 @@ interface Extension {
   }
 }
 
-interface ErrorStats {
-  totalErrors: number
-  errorsByType: Record<string, number>
-  recentErrors: Array<{ type: string; message: string; timestamp: number }>
-}
-
-interface PermissionStats {
-  totalExtensions: number
-  totalPermissions: number
-  permissionsByCategory: Record<string, number>
-  permissionsByRisk: Record<string, number>
-  userSettingsCount: number
-}
-
 interface ExtensionManagerProps {
   open: boolean
   onOpenChange?: (open: boolean) => void
@@ -71,8 +54,6 @@ export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
   const [isLoading, setIsLoading] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null)
-  const [errorStats, setErrorStats] = useState<ErrorStats | null>(null)
-  const [permissionStats, setPermissionStats] = useState<PermissionStats | null>(null)
   const [selectedExtension, setSelectedExtension] = useState<Extension | null>(null)
 
   // 加载扩展列表
@@ -111,35 +92,10 @@ export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
     }
   }
 
-  // 加载统计信息
-  const loadStats = async (): Promise<void> => {
-    try {
-      const [errorResult, permissionResult] = await Promise.all([
-        window.api.extension.getErrorStats(),
-        window.api.extension.getPermissionStats()
-      ])
-
-      if (errorResult.success && errorResult.stats) {
-        setErrorStats(errorResult.stats)
-      } else {
-        setErrorStats(null)
-      }
-
-      if (permissionResult.success && permissionResult.stats) {
-        setPermissionStats(permissionResult.stats)
-      } else {
-        setPermissionStats(null)
-      }
-    } catch (error) {
-      console.error('Failed to load stats:', error)
-    }
-  }
-
   // 当对话框打开时加载扩展
   useEffect(() => {
     if (open) {
       loadExtensions()
-      loadStats()
     }
   }, [open])
 
@@ -149,7 +105,6 @@ export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
       const result = await window.api.extension.loadWithIsolation(path)
       if (result.success) {
         await loadExtensions()
-        await loadStats()
 
         // 显示成功消息
         console.log('Extension loaded successfully:', result)
@@ -168,7 +123,6 @@ export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
       const result = await window.api.extension.unloadWithIsolation(id)
       if (result.success) {
         await loadExtensions()
-        await loadStats()
         setConfirmDelete(null)
       } else {
         throw new Error(result.error || 'Failed to remove extension')
@@ -242,9 +196,191 @@ export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
       case 'relaxed':
         return t('extensions.isolation.relaxed')
       case 'none':
-        return t('extensions.isolation.none')
+        return 'none'
       default:
         return level
+    }
+  }
+
+  // 检查扩展文件结构
+  const handleInspectExtension = async (extension: Extension): Promise<void> => {
+    try {
+      console.log(`Inspecting extension structure for: ${extension.name}`)
+
+      if (!extension.path) {
+        console.error('Extension path not available')
+        return
+      }
+
+      // 检查可能的选项页面路径
+      const possibleOptionsPaths: string[] = []
+      if (extension.manifest?.options_page) {
+        possibleOptionsPaths.push(extension.manifest.options_page)
+      }
+      if (extension.manifest?.action?.default_popup) {
+        possibleOptionsPaths.push(extension.manifest.action.default_popup)
+      }
+      if (extension.manifest?.browser_action?.default_popup) {
+        possibleOptionsPaths.push(extension.manifest.browser_action.default_popup)
+      }
+
+      // 添加常见的选项页面路径
+      const commonPaths: string[] = [
+        'options.html',
+        'options/index.html',
+        'assets/options.html',
+        'popup.html',
+        'index.html',
+        'settings.html',
+        'config.html'
+      ]
+      possibleOptionsPaths.push(...commonPaths)
+
+      // 显示扩展信息
+      const info = `
+扩展信息:
+
+名称: ${extension.name}
+ID: ${extension.id}
+版本: ${extension.version}
+路径: ${extension.path}
+
+可能的选项页面:
+${possibleOptionsPaths.map((path) => `- ${path}`).join('\n')}
+
+Manifest 信息:
+- Options Page: ${extension.manifest?.options_page || '无'}
+- Action Popup: ${extension.manifest?.action?.default_popup || '无'}
+- Browser Action: ${extension.manifest?.browser_action?.default_popup || '无'}
+- Description: ${extension.manifest?.description || '无'}
+
+建议操作:
+1. 点击"打开选项页面"按钮
+2. 或者手动打开文件夹查找文件
+      `
+
+      const shouldOpenOptions = confirm(info + '\n\n是否要打开选项页面？')
+
+      if (shouldOpenOptions) {
+        // 尝试打开选项页面
+        await handleOpenExtensionFile(extension, possibleOptionsPaths)
+      }
+
+      // 在控制台显示详细信息
+      console.log('Extension path:', extension.path)
+      console.log('Extension manifest:', extension.manifest)
+      console.log('Possible options paths:', possibleOptionsPaths)
+    } catch (error) {
+      console.error('Failed to inspect extension:', error)
+    }
+  }
+
+  // 打开扩展选项页面文件
+  const handleOpenExtensionFile = async (
+    extension: Extension,
+    possiblePaths: string[]
+  ): Promise<void> => {
+    try {
+      // 尝试打开每个可能的路径
+      for (const path of possiblePaths) {
+        const fullPath = `${extension.path}/${path}`
+
+        try {
+          // 使用 shell API 打开文件
+          const result = await window.api.shell.openPath(fullPath)
+          if (result.success) {
+            console.log(`Opened extension file: ${fullPath}`)
+            return
+          } else {
+            console.log(`Failed to open ${path}:`, result.error)
+            continue
+          }
+        } catch (error) {
+          console.log(`Failed to open ${path}:`, error)
+          continue
+        }
+      }
+
+      // 如果所有路径都失败，打开扩展文件夹
+      if (extension.path) {
+        const result = await window.api.shell.openPath(extension.path)
+        if (result.success) {
+          console.log(`Opened extension folder: ${extension.path}`)
+        } else {
+          console.error(`Failed to open extension folder:`, result.error)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to open extension file:', error)
+      alert(`无法打开扩展文件: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  // 打开扩展选项页面
+  const handleOpenExtensionOptions = async (extension: Extension): Promise<void> => {
+    try {
+      console.log(`Attempting to open options for extension: ${extension.name}`)
+
+      // 优先使用我们创建的配置页面
+      if (extension.path && extension.manifest) {
+        const result = await window.api.extension.createConfigPage(
+          extension.id,
+          extension.name,
+          extension.path,
+          extension.manifest
+        )
+
+        if (result.success) {
+          console.log(`Extension config page created: ${result.windowId}`)
+          return
+        } else {
+          console.error('Failed to create config page:', result.error)
+        }
+      }
+
+      // 如果配置页面失败，回退到 file:// URL
+      if (extension.manifest?.options_page && extension.path) {
+        const optionsPath = `${extension.path}/${extension.manifest.options_page}`
+        const fileUrl = `file://${optionsPath.replace(/\\/g, '/')}`
+        console.log(`Opening extension options: ${fileUrl}`)
+
+        const result = await window.api.window.loadExtensionUrl(fileUrl)
+        if (result.success) {
+          console.log(`Extension options loaded successfully`)
+        } else {
+          throw new Error(result.error || 'Failed to load extension options')
+        }
+        return
+      }
+
+      // 尝试其他可能的页面
+      const possiblePages = ['options.html', 'popup.html', 'index.html']
+
+      for (const page of possiblePages) {
+        if (extension.path) {
+          try {
+            const pagePath = `${extension.path}/${page}`
+            const fileUrl = `file://${pagePath.replace(/\\/g, '/')}`
+            console.log(`Trying page: ${fileUrl}`)
+
+            const result = await window.api.window.loadExtensionUrl(fileUrl)
+            if (result.success) {
+              console.log(`Page ${page} loaded successfully`)
+              return
+            } else {
+              console.log(`Failed to load ${page}:`, result.error)
+            }
+          } catch (error) {
+            console.log(`Failed to open ${page}:`, error)
+            continue
+          }
+        }
+      }
+
+      console.log('No suitable page found')
+    } catch (error) {
+      console.error('Failed to open extension options:', error)
+      alert(`无法打开扩展选项页面: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -265,220 +401,219 @@ export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
         onCancel={() => setConfirmDelete(null)}
       />
 
-      <div className="p-4">
-        {/* 统计信息 */}
-        {(errorStats || permissionStats) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
-            {errorStats && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  {t('extensions.errorStats')}
-                </h4>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>
-                    {t('extensions.totalErrors')}: {errorStats.totalErrors}
-                  </div>
-                  <div>
-                    {t('extensions.recentErrors')}: {errorStats.recentErrors.length}
-                  </div>
-                </div>
-              </div>
-            )}
-            {permissionStats && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  {t('extensions.permissionStats')}
-                </h4>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <div>
-                    {t('extensions.totalPermissions')}: {permissionStats.totalPermissions}
-                  </div>
-                  <div>
-                    {t('extensions.highRiskPermissions')}:{' '}
-                    {permissionStats.permissionsByRisk.high || 0}
-                  </div>
-                </div>
-              </div>
-            )}
+      <div className="flex flex-col h-[60vh]">
+        {/* 简化的统计信息 */}
+        <div className="grid grid-cols-2 gap-4 mb-6 p-4 bg-muted/50 rounded-lg flex-shrink-0">
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              {t('extensions.totalExtensions')}
+            </h4>
+            <div className="text-2xl font-bold text-foreground">{extensions.length}</div>
           </div>
-        )}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Power className="h-4 w-4" />
+              {t('extensions.enabledExtensions')}
+            </h4>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+              {extensions.filter((ext) => ext.enabled).length}
+            </div>
+          </div>
+        </div>
 
         {/* 添加扩展按钮 */}
-        <div className="flex justify-end mb-4">
+        <div className="flex justify-end mb-4 flex-shrink-0">
           <Button onClick={() => setIsAddDialogOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             {t('extensions.addExtension')}
           </Button>
         </div>
 
-        {/* 加载状态 */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">{t('extensions.loadingExtensions')}</span>
-          </div>
-        )}
+        {/* 扩展列表容器 - 添加滚动条 */}
+        <div className="flex-1 min-h-0 extension-scrollbar overflow-y-auto pr-2">
+          {/* 加载状态 */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">
+                {t('extensions.loadingExtensions')}
+              </span>
+            </div>
+          )}
 
-        {/* 扩展列表 */}
-        {!isLoading && extensions.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Package className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">{t('extensions.noExtensions')}</p>
-          </div>
-        )}
+          {/* 扩展列表 */}
+          {!isLoading && extensions.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Package className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">{t('extensions.noExtensions')}</p>
+            </div>
+          )}
 
-        {!isLoading && extensions.length > 0 && (
-          <div className="space-y-3">
-            {extensions.map((ext) => (
-              <div
-                key={ext.id}
-                className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
-                  ext.enabled
-                    ? 'border-border bg-background'
-                    : 'border-border bg-muted/50 opacity-60'
-                }`}
-              >
-                {/* 扩展图标 */}
-                <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                    <Package className="h-5 w-5 text-muted-foreground" />
+          {!isLoading && extensions.length > 0 && (
+            <div className="space-y-3 pb-4">
+              {extensions.map((ext) => (
+                <div
+                  key={ext.id}
+                  className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
+                    ext.enabled
+                      ? 'border-border bg-background'
+                      : 'border-border bg-muted/50 opacity-60'
+                  }`}
+                >
+                  {/* 扩展图标 */}
+                  <div className="flex-shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   </div>
-                </div>
 
-                {/* 扩展信息 */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium truncate text-foreground">{ext.name}</h3>
-                    <span className="text-xs text-muted-foreground">v{ext.version}</span>
-                    {ext.permissions && (
-                      <div className="flex items-center gap-1">
-                        {getRiskIcon(ext.permissions.riskLevel)}
+                  {/* 扩展信息 */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="font-medium truncate text-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                        onClick={() => handleOpenExtensionOptions(ext)}
+                        title={`点击打开 ${ext.name} 的选项页面`}
+                      >
+                        {ext.name}
+                      </button>
+                      <span className="text-xs text-muted-foreground">v{ext.version}</span>
+                      {ext.permissions && (
+                        <div className="flex items-center gap-1">
+                          {getRiskIcon(ext.permissions.riskLevel)}
+                          <span className="text-xs text-muted-foreground">
+                            {ext.permissions.riskLevel}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {ext.manifest?.description && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {ext.manifest.description}
+                      </p>
+                    )}
+
+                    {/* 隔离信息 */}
+                    {ext.session && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Shield className="h-3 w-3 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">
-                          {ext.permissions.riskLevel}
+                          {getIsolationLevelText(ext.session.isolationLevel)}
                         </span>
+                        {ext.session.memoryUsage > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({Math.round(ext.session.memoryUsage / 1024 / 1024)}MB)
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* 错误信息 */}
+                    {ext.error && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <AlertTriangle
+                          className={`h-3 w-3 ${
+                            ext.error.severity === 'critical'
+                              ? 'text-red-500'
+                              : ext.error.severity === 'high'
+                                ? 'text-orange-500'
+                                : ext.error.severity === 'medium'
+                                  ? 'text-yellow-500'
+                                  : 'text-blue-500'
+                          }`}
+                        />
+                        <span className="text-xs text-muted-foreground">{ext.error.message}</span>
+                      </div>
+                    )}
+
+                    {/* 权限信息 */}
+                    {ext.manifest?.permissions && ext.manifest.permissions.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {ext.manifest.permissions.slice(0, 3).map((permission, index) => (
+                          <div key={index} className="flex items-center gap-1">
+                            <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                              {permission}
+                            </span>
+                            {ext.permissions?.settings && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 p-0"
+                                onClick={() =>
+                                  handleUpdatePermission(
+                                    ext.id,
+                                    permission,
+                                    !ext.permissions?.settings.includes(permission)
+                                  )
+                                }
+                                title={
+                                  ext.permissions?.settings.includes(permission)
+                                    ? t('extensions.revokePermission')
+                                    : t('extensions.grantPermission')
+                                }
+                              >
+                                {ext.permissions?.settings.includes(permission) ? (
+                                  <CheckCircle className="h-3 w-3 text-green-500" />
+                                ) : (
+                                  <XCircle className="h-3 w-3 text-gray-400" />
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                        {ext.manifest.permissions.length > 3 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{ext.manifest.permissions.length - 3}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
 
-                  {ext.manifest?.description && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {ext.manifest.description}
-                    </p>
-                  )}
-
-                  {/* 隔离信息 */}
-                  {ext.session && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Shield className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {getIsolationLevelText(ext.session.isolationLevel)}
-                      </span>
-                      {ext.session.memoryUsage > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          ({Math.round(ext.session.memoryUsage / 1024 / 1024)}MB)
-                        </span>
+                  {/* 操作按钮 */}
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
+                      title={ext.enabled ? t('extensions.disable') : t('extensions.enable')}
+                    >
+                      {ext.enabled ? (
+                        <Power className="h-4 w-4" />
+                      ) : (
+                        <PowerOff className="h-4 w-4" />
                       )}
-                    </div>
-                  )}
+                    </Button>
 
-                  {/* 错误信息 */}
-                  {ext.error && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <AlertTriangle
-                        className={`h-3 w-3 ${
-                          ext.error.severity === 'critical'
-                            ? 'text-red-500'
-                            : ext.error.severity === 'high'
-                              ? 'text-orange-500'
-                              : ext.error.severity === 'medium'
-                                ? 'text-yellow-500'
-                                : 'text-blue-500'
-                        }`}
-                      />
-                      <span className="text-xs text-muted-foreground">{ext.error.message}</span>
-                    </div>
-                  )}
+                    {/* 调试按钮 */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleInspectExtension(ext)}
+                      title="调试扩展信息"
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
 
-                  {/* 权限信息 */}
-                  {ext.manifest?.permissions && ext.manifest.permissions.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {ext.manifest.permissions.slice(0, 3).map((permission, index) => (
-                        <div key={index} className="flex items-center gap-1">
-                          <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                            {permission}
-                          </span>
-                          {ext.permissions?.settings && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0"
-                              onClick={() =>
-                                handleUpdatePermission(
-                                  ext.id,
-                                  permission,
-                                  !ext.permissions?.settings.includes(permission)
-                                )
-                              }
-                              title={
-                                ext.permissions?.settings.includes(permission)
-                                  ? t('extensions.revokePermission')
-                                  : t('extensions.grantPermission')
-                              }
-                            >
-                              {ext.permissions?.settings.includes(permission) ? (
-                                <CheckCircle className="h-3 w-3 text-green-500" />
-                              ) : (
-                                <XCircle className="h-3 w-3 text-gray-400" />
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                      {ext.manifest.permissions.length > 3 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{ext.manifest.permissions.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => setConfirmDelete({ id: ext.id, name: ext.name })}
+                      title={t('extensions.remove')}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-
-                {/* 操作按钮 */}
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleToggleExtension(ext.id, !ext.enabled)}
-                    title={ext.enabled ? t('extensions.disable') : t('extensions.enable')}
-                  >
-                    {ext.enabled ? <Power className="h-4 w-4" /> : <PowerOff className="h-4 w-4" />}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setSelectedExtension(ext)}
-                    title={t('extensions.details')}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => setConfirmDelete({ id: ext.id, name: ext.name })}
-                    title={t('extensions.remove')}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* 扩展详情对话框 */}
         {selectedExtension && (

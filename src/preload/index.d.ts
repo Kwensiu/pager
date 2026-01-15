@@ -9,15 +9,205 @@ import type {
 } from '../main/types/store'
 import type { ExtensionInfo, ExtensionManifest } from '../main/extensions/types'
 
+// 扩展 ElectronAPI 接口
 declare global {
   interface Window {
-    electron: ElectronAPI
+    electron: ElectronAPI & {
+      shell: {
+        openPath: (path: string) => Promise<{
+          success: boolean
+          error?: string
+        }>
+      }
+      extension: {
+        getAll: () => Promise<{ success: boolean; extensions: ExtensionInfo[]; error?: string }>
+        add: (
+          path: string
+        ) => Promise<{ success: boolean; extension?: ExtensionInfo; error?: string }>
+        remove: (id: string) => Promise<{ success: boolean; error?: string }>
+        toggle: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>
+        validate: (
+          path: string
+        ) => Promise<{ valid: boolean; error?: string; manifest?: ExtensionManifest }>
+        getLoaded: () => Promise<{ success: boolean; loaded: ExtensionInfo[]; error?: string }>
+        getSettings: () => Promise<{
+          success: boolean
+          settings: { enableExtensions: boolean; autoLoadExtensions: boolean }
+          error?: string
+        }>
+        updateSettings: (settings: {
+          enableExtensions?: boolean
+          autoLoadExtensions?: boolean
+        }) => Promise<{ success: boolean; error?: string }>
+        // 新增的增强功能API
+        getErrorStats: () => Promise<{
+          success: boolean
+          stats?: {
+            totalErrors: number
+            errorsByType: Record<string, number>
+            recentErrors: Array<{ type: string; message: string; timestamp: number }>
+          }
+          error?: string
+        }>
+        getPermissionStats: () => Promise<{
+          success: boolean
+          stats?: {
+            totalExtensions: number
+            totalPermissions: number
+            permissionsByCategory: Record<string, number>
+            permissionsByRisk: Record<string, number>
+            userSettingsCount: number
+          }
+          error?: string
+        }>
+        clearErrorHistory: () => Promise<{ success: boolean; error?: string }>
+        getWithPermissions: (id: string) => Promise<{
+          success: boolean
+          extension?: {
+            id: string
+            name: string
+            version: string
+            enabled: boolean
+            manifest?: ExtensionManifest
+          }
+          session?: {
+            id: string
+            isolationLevel: string
+            isActive: boolean
+            memoryUsage: number
+          } | null
+          permissions?: { settings: string[]; riskLevel: string }
+          error?: string
+        }>
+        updatePermissionSettings: (
+          id: string,
+          permissions: string[],
+          allowed: boolean
+        ) => Promise<{ success: boolean; error?: string }>
+        // 隔离加载和卸载扩展
+        loadWithIsolation: (
+          path: string,
+          isolationLevel?: string
+        ) => Promise<{
+          success: boolean
+          extension?: { id: string; name: string; version: string; enabled: boolean }
+          sessionId?: string
+          error?: string
+        }>
+        unloadWithIsolation: (id: string) => Promise<{ success: boolean; error?: string }>
+        // 配置页面相关
+        createConfigPage: (
+          extensionId: string,
+          extensionName: string,
+          extensionPath: string,
+          manifest: ExtensionManifest
+        ) => Promise<{
+          success: boolean
+          windowId?: string
+          error?: string
+        }>
+      }
+    }
     api: {
       ipcRenderer: {
-        on: (channel: string, listener: (...args: any[]) => void) => void
+        on: (channel: string, listener: (...args: unknown[]) => void) => void
         removeAllListeners: (channel: string) => void
-        send: (channel: string, ...args: any[]) => void
-        invoke: (channel: string, ...args: any[]) => Promise<any>
+        send: (channel: string, ...args: unknown[]) => void
+        invoke: (channel: string, ...args: unknown[]) => Promise<unknown>
+      }
+      shell: {
+        openPath: (path: string) => Promise<{
+          success: boolean
+          error?: string
+        }>
+      }
+      extension: {
+        getAll: () => Promise<{ success: boolean; extensions: ExtensionInfo[]; error?: string }>
+        add: (
+          path: string
+        ) => Promise<{ success: boolean; extension?: ExtensionInfo; error?: string }>
+        remove: (id: string) => Promise<{ success: boolean; error?: string }>
+        toggle: (id: string, enabled: boolean) => Promise<{ success: boolean; error?: string }>
+        validate: (
+          path: string
+        ) => Promise<{ valid: boolean; error?: string; manifest?: ExtensionManifest }>
+        getLoaded: () => Promise<{ success: boolean; loaded: ExtensionInfo[]; error?: string }>
+        getSettings: () => Promise<{
+          success: boolean
+          settings: { enableExtensions: boolean; autoLoadExtensions: boolean }
+          error?: string
+        }>
+        updateSettings: (settings: {
+          enableExtensions?: boolean
+          autoLoadExtensions?: boolean
+        }) => Promise<{ success: boolean; error?: string }>
+        // 新增的增强功能API
+        getErrorStats: () => Promise<{
+          success: boolean
+          stats?: {
+            totalErrors: number
+            errorsByType: Record<string, number>
+            recentErrors: Array<{ type: string; message: string; timestamp: number }>
+          }
+          error?: string
+        }>
+        getPermissionStats: () => Promise<{
+          success: boolean
+          stats?: {
+            totalExtensions: number
+            totalPermissions: number
+            permissionsByCategory: Record<string, number>
+            permissionsByRisk: Record<string, number>
+            userSettingsCount: number
+          }
+          error?: string
+        }>
+        clearErrorHistory: () => Promise<{ success: boolean; error?: string }>
+        getWithPermissions: (id: string) => Promise<{
+          success: boolean
+          extension?: {
+            id: string
+            name: string
+            version: string
+            enabled: boolean
+            manifest?: ExtensionManifest
+          }
+          session?: {
+            id: string
+            isolationLevel: string
+            isActive: boolean
+            memoryUsage: number
+          } | null
+          permissions?: { settings: string[]; riskLevel: string }
+          error?: string
+        }>
+        updatePermissionSettings: (
+          id: string,
+          permissions: string[],
+          allowed: boolean
+        ) => Promise<{ success: boolean; error?: string }>
+        // 隔离加载和卸载扩展
+        loadWithIsolation: (
+          path: string,
+          isolationLevel?: string
+        ) => Promise<{
+          success: boolean
+          extension?: { id: string; name: string; version: string; enabled: boolean }
+          sessionId?: string
+          error?: string
+        }>
+        unloadWithIsolation: (id: string) => Promise<{ success: boolean; error?: string }>
+        // 配置页面相关
+        createConfigPage: (
+          extensionId: string,
+          extensionName: string,
+          extensionPath: string,
+          manifest: ExtensionManifest
+        ) => Promise<{
+          success: boolean
+          windowId?: string
+          error?: string
+        }>
       }
       webview: {
         loadUrl: (url: string) => void
@@ -27,10 +217,25 @@ declare global {
         goBack: () => void
         goForward: () => void
         showContextMenu: (params: Electron.ContextMenuParams) => void
+        createExtensionOptions: (
+          url: string,
+          title: string
+        ) => Promise<{
+          success: boolean
+          windowId?: string
+        }>
+        openExtensionOptionsInMain: (url: string) => Promise<{
+          success: boolean
+          error?: string
+        }>
       }
       window: {
         resize: () => void
         openDevTools: () => void
+        loadExtensionUrl: (url: string) => Promise<{
+          success: boolean
+          error?: string
+        }>
       }
       dialog: {
         openDirectory: (

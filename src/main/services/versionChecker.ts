@@ -192,10 +192,14 @@ class VersionChecker {
   > {
     try {
       // 读取 package.json
-      const packageJson = await import('../../../package.json')
+      const { readFile } = await import('fs/promises')
+      const { join } = await import('path')
+      const packageJsonPath = join(__dirname, '../../../package.json')
+      const packageJsonContent = await readFile(packageJsonPath, 'utf-8')
+      const packageJson = JSON.parse(packageJsonContent)
       const dependencies = {
-        ...packageJson.default?.dependencies,
-        ...packageJson.default?.devDependencies
+        ...packageJson.dependencies,
+        ...packageJson.devDependencies
       }
 
       const results: Array<{
