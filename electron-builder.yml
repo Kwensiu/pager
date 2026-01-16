@@ -1,4 +1,4 @@
-appId: com.pager.app
+appId: com.pager.ks
 productName: Pager
 copyright: Copyright © 2026 Kwensiu
 publish:
@@ -28,6 +28,7 @@ nsis:
   allowElevation: true
   perMachine: false
   deleteAppDataOnUninstall: false
+  include: build/installer.nsh
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

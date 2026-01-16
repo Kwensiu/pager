@@ -1,4 +1,5 @@
 import { app, BrowserWindow, session } from 'electron'
+import { join } from 'path'
 import {
   createWindow,
   registerCertificateErrorHandler,
@@ -12,6 +13,11 @@ import { sessionIsolationService } from './services/sessionIsolation'
 import { globalProxyService } from './services/proxyService'
 
 let mainWindow: BrowserWindow | null = null
+
+// 设置自定义用户数据路径，避免重名冲突
+if (process.platform === 'win32') {
+  app.setPath('userData', join(app.getPath('appData'), 'com.pager.ks'))
+}
 
 app.whenReady().then(async () => {
   // 动态导入服务以避免循环依赖
@@ -41,7 +47,7 @@ app.whenReady().then(async () => {
   app.commandLine.appendSwitch('disable-features', 'IsolateOrigins,site-per-process')
   // 设置 App User Model ID for Windows
   if (process.platform === 'win32') {
-    app.setAppUserModelId('com.pager.app')
+    app.setAppUserModelId('com.pager.ks')
   }
 
   // 监听窗口创建事件，设置快捷键优化

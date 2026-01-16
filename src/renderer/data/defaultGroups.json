@@ -5,69 +5,153 @@
       "name": "开发",
       "secondaryGroups": [
         {
-          "id": "default-ai",
-          "name": "AI工具",
+          "name": "DEV",
+          "expanded": true,
           "websites": [
             {
-              "id": "chatgpt",
-              "name": "ChatGPT",
-              "url": "https://chat.openai.com"
+              "name": "Localhost | 3000",
+              "url": "http://localhost:3000",
+              "order": 0,
+              "id": "website-1768412779284",
+              "createdAt": 1768412779284,
+              "updatedAt": 1768591477815
             },
             {
-              "id": "claude",
-              "name": "Claude",
-              "url": "https://claude.ai"
-            },
-            {
-              "id": "deepseek",
-              "name": "DeepSeek",
-              "url": "https://chat.deepseek.com"
+              "name": "Localhost | 4321",
+              "url": "http://localhost:4321/blog/",
+              "order": 100,
+              "id": "website-1768206803568",
+              "createdAt": 1768206803568,
+              "updatedAt": 1768543976213
             }
-          ]
+          ],
+          "id": "secondary-1768160800257",
+          "primaryGroupId": "default-dev",
+          "order": 0,
+          "createdAt": 1768160800257,
+          "updatedAt": 1768579553721
         },
         {
-          "id": "default-code",
-          "name": "代码托管",
+          "name": "Icon",
+          "expanded": true,
           "websites": [
             {
-              "id": "github",
-              "name": "GitHub",
-              "url": "https://github.com"
+              "name": "Flaticons",
+              "url": "https://flaticons.net/free-icons",
+              "order": 0,
+              "id": "website-1768412410564",
+              "createdAt": 1768412410564,
+              "updatedAt": 1768428104748
             },
             {
-              "id": "gitlab",
-              "name": "GitLab",
-              "url": "https://gitlab.com"
+              "name": "AllSvgIcons",
+              "url": "https://allsvgicons.com/",
+              "order": 100,
+              "id": "website-1768412329462",
+              "createdAt": 1768412329462,
+              "updatedAt": 1768428104748
+            },
+            {
+              "name": "Lucide",
+              "url": "https://lucide.dev/icons/",
+              "order": 200,
+              "id": "website-1768412301871",
+              "createdAt": 1768412301871,
+              "updatedAt": 1768428104748
+            },
+            {
+              "name": "IconesJS",
+              "url": "https://icones.js.org/",
+              "order": 300,
+              "id": "website-1768412371153",
+              "createdAt": 1768412371153,
+              "updatedAt": 1768428104748
+            },
+            {
+              "name": "Iconify",
+              "url": "https://icon-sets.iconify.design/?query=update&keyword=material-symbols",
+              "order": 400,
+              "id": "website-1768160970227",
+              "createdAt": 1768160970227,
+              "updatedAt": 1768428104748
             }
-          ]
+          ],
+          "id": "secondary-1768160919769",
+          "primaryGroupId": "default-dev",
+          "order": 100,
+          "createdAt": 1768160919769,
+          "updatedAt": 1768427621627
+        },
+        {
+          "id": "default-ai",
+          "name": "AI",
+          "websites": [
+            {
+              "name": "DeepSeek API",
+              "url": "https://platform.deepseek.com/",
+              "order": 0,
+              "id": "website-1768231659284",
+              "createdAt": 1768231659284,
+              "updatedAt": 1768546979132
+            },
+            {
+              "name": "BigModel API",
+              "url": "https://bigmodel.cn/console/overview",
+              "order": 100,
+              "id": "website-1768412702335",
+              "createdAt": 1768412702335,
+              "updatedAt": 1768546979132
+            },
+            {
+              "name": "Nvidia Models",
+              "url": "https://build.nvidia.com/models",
+              "order": 200,
+              "id": "website-1768231626003",
+              "createdAt": 1768231626003,
+              "updatedAt": 1768546979132
+            }
+          ],
+          "order": 200,
+          "primaryGroupId": "default-dev",
+          "createdAt": 1768157091206,
+          "updatedAt": 1768427621627,
+          "expanded": true
         }
       ],
+      "createdAt": 1768157091206,
+      "updatedAt": 1768580936836,
       "websites": [
         {
           "name": "Google",
-          "url": "https://www.google.com",
-          "fingerprintEnabled": false,
-          "fingerprintMode": "balanced",
+          "url": "https://google.com",
           "order": 0,
-          "id": "website-1768412011369",
-          "createdAt": 1768412011369,
-          "updatedAt": 1768412011369
+          "id": "website-1768580936836",
+          "createdAt": 1768580936836,
+          "updatedAt": 1768581265808
         },
         {
           "id": "github",
           "name": "GitHub",
           "url": "https://github.com",
-          "order": 1,
+          "order": 200,
           "createdAt": 1768157091206,
-          "updatedAt": 1768157091206
+          "updatedAt": 1768581265808
         },
         {
-          "name": "图片压缩",
+          "name": "Blog",
+          "url": "https://kwensiu.github.io/blog/",
+          "order": 300,
+          "id": "website-1768415650541",
+          "createdAt": 1768415650541,
+          "updatedAt": 1768581265808
+        },
+        {
+          "name": "Squoosh",
           "url": "https://squoosh.app/",
-          "order": 2,
+          "order": 400,
           "id": "website-1768160993388",
           "createdAt": 1768160993388,
-          "updatedAt": 1768161270777
+          "updatedAt": 1768581265808
         }
       ]
     },
@@ -77,24 +161,38 @@
       "secondaryGroups": [
         {
           "id": "default-messaging",
-          "name": "即时通讯",
+          "name": "Chat",
           "websites": [
-            {
-              "id": "oopz",
-              "name": "Oopz",
-              "url": "https://web.oopz.cn/"
-            },
             {
               "id": "telegram",
               "name": "Telegram",
-              "url": "https://web.telegram.org"
+              "url": "https://web.telegram.org",
+              "order": 0,
+              "createdAt": 1768157091206,
+              "updatedAt": 1768426569900
+            },
+            {
+              "id": "oopz",
+              "name": "Oopz",
+              "url": "https://web.oopz.cn/",
+              "order": 100,
+              "createdAt": 1768157091206,
+              "updatedAt": 1768426569900
             },
             {
               "id": "discord",
               "name": "Discord",
-              "url": "https://discord.com"
+              "url": "https://discord.com",
+              "order": 200,
+              "createdAt": 1768157091206,
+              "updatedAt": 1768426569900
             }
-          ]
+          ],
+          "order": 0,
+          "primaryGroupId": "default-social",
+          "createdAt": 1768157091206,
+          "updatedAt": 1768461341643,
+          "expanded": true
         },
         {
           "id": "default-video",
@@ -103,14 +201,55 @@
             {
               "id": "youtube",
               "name": "YouTube",
-              "url": "https://youtube.com"
+              "url": "https://youtube.com",
+              "order": 0,
+              "createdAt": 1768157091206,
+              "updatedAt": 1768426695908
             },
             {
               "id": "bilibili",
               "name": "Bilibili",
-              "url": "https://bilibili.com"
+              "url": "https://bilibili.com",
+              "order": 100,
+              "createdAt": 1768157091206,
+              "updatedAt": 1768426695908
             }
-          ]
+          ],
+          "order": 100,
+          "primaryGroupId": "default-social",
+          "createdAt": 1768157091206,
+          "updatedAt": 1768427621627
+        },
+        {
+          "name": "Game",
+          "expanded": true,
+          "websites": [
+            {
+              "name": "MAA - PLUS",
+              "url": "https://zoot.plus/",
+              "order": 0,
+              "id": "website-1768461379123",
+              "createdAt": 1768461379123,
+              "updatedAt": 1768461379123
+            }
+          ],
+          "id": "secondary-1768461335563",
+          "primaryGroupId": "default-social",
+          "order": 0,
+          "createdAt": 1768461335563,
+          "updatedAt": 1768461379124
+        }
+      ],
+      "createdAt": 1768157091206,
+      "updatedAt": 1768572470797,
+      "websites": [
+        {
+          "name": "Google",
+          "url": "https://www.google.com",
+          "order": 0,
+          "id": "website-1768572470797",
+          "createdAt": 1768572470797,
+          "updatedAt": 1768572470797
         }
       ]
     }

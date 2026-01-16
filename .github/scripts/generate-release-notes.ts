@@ -69,19 +69,19 @@ function getCommitsSinceLastTag(): CommitRange {
 
 function categorizeCommits(commits: string[]): Categories {
   const categories: Categories = {
-    '🚀 Features': [],
-    '🐛 Bug Fixes': [],
+    '🚀 新功能': [],
+    '🐛 修复': [],
     '💄 UI/UX': [],
-    '🔧 Configuration': [],
-    '📝 Documentation': [],
-    '⚡ Performance': [],
-    '🔒 Security': [],
-    '🧪 Testing': [],
-    '🔄 Refactoring': [],
-    '📦 Dependencies': [],
-    '🗑️  Removed': [],
-    '🔀 Merged': [],
-    '📋 Other': []
+    '🔧 配置': [],
+    '📝 文档': [],
+    '⚡ 性能': [],
+    '🔒 安全': [],
+    '🧪 测试': [],
+    '🔄 重构': [],
+    '📦 依赖': [],
+    '🗑️ 删除': [],
+    '🔀 合并': [],
+    '📋 其他': []
   }
 
   const featureKeywords = ['feat', 'feature', 'add', 'new', 'implement', 'introduce']
@@ -101,32 +101,32 @@ function categorizeCommits(commits: string[]): Categories {
     const [hash, message, author, date] = commit.split('|')
     const lowerMessage = message.toLowerCase()
 
-    let category = '📋 Other'
+    let category = '📋 其他'
 
     if (featureKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🚀 Features'
+      category = '🚀 新功能'
     } else if (bugKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🐛 Bug Fixes'
+      category = '🐛 修复'
     } else if (uiKeywords.some((keyword) => lowerMessage.includes(keyword))) {
       category = '💄 UI/UX'
     } else if (configKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🔧 Configuration'
+      category = '🔧 配置'
     } else if (docsKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '📝 Documentation'
+      category = '📝 文档'
     } else if (perfKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '⚡ Performance'
+      category = '⚡ 性能'
     } else if (securityKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🔒 Security'
+      category = '🔒 安全'
     } else if (testKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🧪 Testing'
+      category = '🧪 测试'
     } else if (refactorKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🔄 Refactoring'
+      category = '🔄 重构'
     } else if (depsKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '📦 Dependencies'
+      category = '📦 依赖'
     } else if (removeKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🗑️  Removed'
+      category = '🗑️ 删除'
     } else if (mergeKeywords.some((keyword) => lowerMessage.includes(keyword))) {
-      category = '🔀 Merged'
+      category = '🔀 合并'
     }
 
     categories[category].push({ hash: hash.substring(0, 7), message, author, date })
@@ -203,6 +203,7 @@ function generateReleaseNotes(
 
   // Footer
   notes += `---\n`
+  notes += ``
   notes += `🎊 感谢您使用 Pager！如有问题请提交 [Issue](https://github.com/Kwensiu/Pager/issues)\n`
 
   return notes

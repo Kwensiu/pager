@@ -15,7 +15,12 @@ export const getDefaultGroups = (): PrimaryGroup[] => {
     ...pg,
     createdAt: now,
     updatedAt: now,
-    websites: [], // 一级分类下的网站默认为空数组
+    websites: pg.websites.map((website, websiteIndex) => ({
+      ...website,
+      order: websiteIndex * 100, // 添加order字段
+      createdAt: now,
+      updatedAt: now
+    })), // 一级分类下的网站从JSON文件中读取
     secondaryGroups: pg.secondaryGroups.map((sg, index) => ({
       ...sg,
       order: index * 100, // 添加order字段

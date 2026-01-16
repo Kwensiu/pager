@@ -16,6 +16,7 @@ declare module 'defaultGroups.json' {
   export interface DefaultPrimaryGroup {
     id: string
     name: string
+    websites: DefaultWebsite[]
     secondaryGroups: DefaultSecondaryGroup[]
   }
 
