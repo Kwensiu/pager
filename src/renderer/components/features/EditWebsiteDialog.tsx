@@ -70,7 +70,11 @@ export function EditWebsiteDialog({
     }
 
     onSave(updatedWebsite)
-    onOpenChange(false)
+
+    // 延迟关闭对话框，确保状态更新完成
+    setTimeout(() => {
+      onOpenChange(false)
+    }, 100)
   }
 
   const handleRefreshFavicon = async (): Promise<void> => {

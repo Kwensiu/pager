@@ -205,78 +205,96 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
         // 注入指纹伪装脚本
         const fingerprintScript = `
           (function() {
-            // 修改 User-Agent
-            Object.defineProperty(navigator, 'userAgent', {
-              value: '${fingerprintData.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}',
-              writable: false,
-              configurable: false
-            });
-            
-            // 修改平台
-            Object.defineProperty(navigator, 'platform', {
-              value: '${fingerprintData.platform || 'Win32'}',
-              writable: false,
-              configurable: false
-            });
-            
-            // 修改语言
-            Object.defineProperty(navigator, 'languages', {
-              value: ${JSON.stringify(fingerprintData.languages || ['zh-CN', 'zh', 'en-US', 'en'])},
-              writable: false,
-              configurable: false
-            });
-            
-            // 修改硬件并发数
-            Object.defineProperty(navigator, 'hardwareConcurrency', {
-              value: ${fingerprintData.hardwareConcurrency || 8},
-              writable: false,
-              configurable: false
-            });
-            
-            // 修改设备内存
-            Object.defineProperty(navigator, 'deviceMemory', {
-              value: ${fingerprintData.deviceMemory || 8},
-              writable: false,
-              configurable: false
-            });
-            
-            // 修改屏幕分辨率
-            const screenResolution = '${fingerprintData.screenResolution || '1920x1080'}';
-            const [width, height] = screenResolution.split('x').map(Number);
-            
-            // 修改屏幕属性
-            Object.defineProperty(screen, 'width', {
-              value: width,
-              writable: false,
-              configurable: false
-            });
-            
-            Object.defineProperty(screen, 'height', {
-              value: height,
-              writable: false,
-              configurable: false
-            });
-            
-            Object.defineProperty(screen, 'availWidth', {
-              value: width,
-              writable: false,
-              configurable: false
-            });
-            
-            Object.defineProperty(screen, 'availHeight', {
-              value: height,
-              writable: false,
-              configurable: false
-            });
-            
-            // 修改时区
-            Object.defineProperty(Intl.DateTimeFormat().resolvedOptions(), 'timeZone', {
-              value: '${fingerprintData.timezone || 'Asia/Shanghai'}',
-              writable: false,
-              configurable: false
-            });
-            
-            console.log('指纹伪装已应用，模式: ${fingerprintMode}');
+            try {
+              const fingerprintData = {
+                userAgent: '${fingerprintData.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}',
+                platform: '${fingerprintData.platform || 'Win32'}',
+                languages: ${JSON.stringify(fingerprintData.languages || ['zh-CN', 'zh', 'en-US', 'en'])},
+                hardwareConcurrency: ${fingerprintData.hardwareConcurrency || 8},
+                deviceMemory: ${fingerprintData.deviceMemory || 8},
+                screenResolution: '${fingerprintData.screenResolution || '1920x1080'}',
+                timezone: '${fingerprintData.timezone || 'Asia/Shanghai'}'
+              };
+
+              // 修改 User-Agent
+              Object.defineProperty(navigator, 'userAgent', {
+                value: fingerprintData.userAgent,
+                writable: false,
+                configurable: false
+              });
+              
+              // 修改平台
+              Object.defineProperty(navigator, 'platform', {
+                value: fingerprintData.platform,
+                writable: false,
+                configurable: false
+              });
+              
+              // 跳过语言修改，因为某些浏览器不允许重新定义
+              
+              // 修改硬件并发数
+              Object.defineProperty(navigator, 'hardwareConcurrency', {
+                value: fingerprintData.hardwareConcurrency,
+                writable: false,
+                configurable: false
+              });
+              
+              // 修改设备内存
+              Object.defineProperty(navigator, 'deviceMemory', {
+                value: fingerprintData.deviceMemory,
+                writable: false,
+                configurable: false
+              });
+              
+              // 修改屏幕分辨率
+              const [width, height] = fingerprintData.screenResolution.split('x').map(Number);
+              
+              // 修改屏幕属性
+              Object.defineProperty(screen, 'width', {
+                value: width,
+                writable: false,
+                configurable: false
+              });
+              
+              Object.defineProperty(screen, 'height', {
+                value: height,
+                writable: false,
+                configurable: false
+              });
+              
+              Object.defineProperty(screen, 'availWidth', {
+                value: width,
+                writable: false,
+                configurable: false
+              });
+              
+              Object.defineProperty(screen, 'availHeight', {
+                value: height,
+                writable: false,
+                configurable: false
+              });
+              
+              // 修改时区
+              try {
+                const originalDateTimeFormat = Intl.DateTimeFormat;
+                Intl.DateTimeFormat = function(locales, options) {
+                  const result = originalDateTimeFormat.call(this, locales, options);
+                  const originalResolvedOptions = result.resolvedOptions;
+                  result.resolvedOptions = function() {
+                    const opts = originalResolvedOptions.call(this);
+                    opts.timeZone = fingerprintData.timezone;
+                    return opts;
+                  };
+                  return result;
+                };
+              } catch (e) {
+                console.log('时区修改失败:', e);
+              }
+              
+              console.log('指纹伪装已应用，模式: ${fingerprintMode}');
+            } catch (error) {
+              console.error('指纹伪装脚本执行失败:', error);
+            }
           })();
         `
 
@@ -462,6 +480,35 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
       }
     }, [url, applyFingerprint])
 
+    // 监听指纹设置变化并重新应用指纹
+    useEffect(() => {
+      const webview = webviewRef.current
+      if (!webview) return
+
+      // 检查 WebView 是否已经准备好
+      const checkAndApplyFingerprint = (): void => {
+        try {
+          // 尝试执行一个简单的 JavaScript 来检查 WebView 是否准备好
+          webview
+            .executeJavaScript('true')
+            .then(() => {
+              console.log('指纹设置变化，重新应用指纹伪装')
+              applyFingerprint()
+            })
+            .catch(() => {
+              // WebView 还没准备好，等待一段时间后再试
+              setTimeout(checkAndApplyFingerprint, 500)
+            })
+        } catch {
+          // WebView 还没准备好，等待一段时间后再试
+          setTimeout(checkAndApplyFingerprint, 500)
+        }
+      }
+
+      // 延迟执行，确保 WebView 已经挂载到 DOM
+      setTimeout(checkAndApplyFingerprint, 100)
+    }, [fingerprintEnabled, fingerprintMode, applyFingerprint])
+
     // 仅保存 webview 引用
     const webviewCallbackRef = useCallback((element: WebViewElement | null) => {
       if (element) {
@@ -536,7 +583,9 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
             ref={webviewCallbackRef}
             src={url}
             style={{ width: '100%', height: '100%', border: 'none' }}
-            {...({ allowpopups: settings.allowPopups } as React.HTMLAttributes<HTMLElement>)}
+            {...({
+              allowpopups: settings.allowPopups ? 'true' : 'false'
+            } as React.HTMLAttributes<HTMLElement>)}
             {...({ partition } as React.HTMLAttributes<HTMLElement>)}
             {...({
               webpreferences: `contextIsolation=yes, nodeIntegration=no, javascript=${settings.enableJavaScript ? 'yes' : 'no'}`

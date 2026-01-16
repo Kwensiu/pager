@@ -197,6 +197,56 @@ class FingerprintService {
   }
 
   /**
+   * 根据模式获取指纹生成参数
+   * @param mode 指纹伪装模式
+   * @returns 指纹生成参数
+   */
+  private getFingerprintParams(mode: 'basic' | 'balanced' | 'advanced'): {
+    includeScreen: boolean
+    includeTimezone: boolean
+    includeLanguages: boolean
+    includeCanvas: boolean
+    includeWebGL: boolean
+    includeAudio: boolean
+    includeHardware: boolean
+  } {
+    switch (mode) {
+      case 'basic':
+        return {
+          includeScreen: true,
+          includeTimezone: true,
+          includeLanguages: true,
+          includeCanvas: false,
+          includeWebGL: false,
+          includeAudio: false,
+          includeHardware: false
+        }
+      case 'balanced':
+        return {
+          includeScreen: true,
+          includeTimezone: true,
+          includeLanguages: true,
+          includeCanvas: true,
+          includeWebGL: false,
+          includeAudio: false,
+          includeHardware: true
+        }
+      case 'advanced':
+        return {
+          includeScreen: true,
+          includeTimezone: true,
+          includeLanguages: true,
+          includeCanvas: true,
+          includeWebGL: true,
+          includeAudio: true,
+          includeHardware: true
+        }
+      default:
+        return this.getFingerprintParams('balanced')
+    }
+  }
+
+  /**
    * 生成浏览器指纹
    * @param options 生成选项
    * @returns 包含指纹和请求头的对象
@@ -227,24 +277,52 @@ class FingerprintService {
         locales: ['zh-CN']
       })
 
+      // 获取模式参数
+      const mode = (options?.mode as 'basic' | 'balanced' | 'advanced') || 'balanced'
+      const params = this.getFingerprintParams(mode)
+
       // 添加动态随机化参数
-      const enhancedFingerprint = {
-        ...fingerprint,
-        screenResolution: this.getRandomScreenResolution(),
-        timezone: this.getRandomTimezone(),
-        languages: this.getRandomLanguages(),
-        canvasNoise: this.getRandomCanvasNoise(),
-        webGL: this.getRandomWebGLParams(),
-        audio: this.getRandomAudioParams(),
-        // 添加更多随机化参数
-        hardwareConcurrency: Math.floor(Math.random() * 8) + 4, // 4-12 核
-        deviceMemory: Math.floor(Math.random() * 8) + 4, // 4-12 GB
-        maxTouchPoints: Math.floor(Math.random() * 2), // 0-1
-        colorDepth: 24,
-        pixelRatio: Math.random() > 0.5 ? 1 : Math.random() > 0.5 ? 1.25 : 1.5,
-        // 添加时间戳，使指纹每次都略有不同
-        timestamp: Date.now()
+      const enhancedFingerprint: Record<string, unknown> = {
+        ...fingerprint
       }
+
+      // 根据模式添加不同的指纹参数
+      if (params.includeScreen) {
+        enhancedFingerprint.screenResolution = this.getRandomScreenResolution()
+      }
+
+      if (params.includeTimezone) {
+        enhancedFingerprint.timezone = this.getRandomTimezone()
+      }
+
+      if (params.includeLanguages) {
+        enhancedFingerprint.languages = this.getRandomLanguages()
+      }
+
+      if (params.includeCanvas) {
+        enhancedFingerprint.canvasNoise = this.getRandomCanvasNoise()
+      }
+
+      if (params.includeWebGL) {
+        enhancedFingerprint.webGL = this.getRandomWebGLParams()
+      }
+
+      if (params.includeAudio) {
+        enhancedFingerprint.audio = this.getRandomAudioParams()
+      }
+
+      if (params.includeHardware) {
+        enhancedFingerprint.hardwareConcurrency = Math.floor(Math.random() * 8) + 4 // 4-12 核
+        enhancedFingerprint.deviceMemory = Math.floor(Math.random() * 8) + 4 // 4-12 GB
+        enhancedFingerprint.maxTouchPoints = Math.floor(Math.random() * 2) // 0-1
+        enhancedFingerprint.colorDepth = 24
+        enhancedFingerprint.pixelRatio = Math.random() > 0.5 ? 1 : Math.random() > 0.5 ? 1.25 : 1.5
+      }
+
+      // 添加时间戳，使指纹每次都略有不同
+      enhancedFingerprint.timestamp = Date.now()
+
+      console.log(`Generated fingerprint with ${mode} mode, params:`, params)
 
       // 缓存指纹
       this.cacheFingerprint(cacheKey, { fingerprint: enhancedFingerprint, headers })

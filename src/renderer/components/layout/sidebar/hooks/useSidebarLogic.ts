@@ -241,6 +241,8 @@ export function useSidebarLogic({
             name: updatedWebsite.name,
             url: updatedWebsite.url,
             description: updatedWebsite.description,
+            fingerprintEnabled: updatedWebsite.fingerprintEnabled,
+            fingerprintMode: updatedWebsite.fingerprintMode,
             updatedAt: Date.now()
           }
           return {
@@ -262,6 +264,8 @@ export function useSidebarLogic({
                   name: updatedWebsite.name,
                   url: updatedWebsite.url,
                   description: updatedWebsite.description,
+                  fingerprintEnabled: updatedWebsite.fingerprintEnabled,
+                  fingerprintMode: updatedWebsite.fingerprintMode,
                   updatedAt: Date.now()
                 }
                 return {
@@ -279,6 +283,12 @@ export function useSidebarLogic({
 
     setPrimaryGroups(updatedPrimaryGroups)
     storageService.setPrimaryGroups(updatedPrimaryGroups)
+
+    // 更新当前网站状态（如果保存的是当前激活的网站）
+    if (currentWebsite && currentWebsite.id === updatedWebsite.id) {
+      setCurrentWebsite(updatedWebsite)
+    }
+
     dialogManagement.closeEditWebsiteDialog()
   }
 
