@@ -28,6 +28,10 @@ jobs:
       PLATFORM: win
       ARTIFACT_NAME: windows
 
+    outputs:
+      version: ${{ steps.extract_version.outputs.version || steps.set_version.outputs.version }}
+      tag: ${{ steps.extract_version.outputs.tag || steps.set_version.outputs.tag }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '25'
+          node-version: '22'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -45,7 +49,7 @@ jobs:
 
       - name: Run lint and typecheck
         run: |
-          yarn format
+          yarn format --check
           yarn lint
           yarn typecheck
 
@@ -96,27 +100,38 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          version="${{ needs.release.outputs.version || github.event.inputs.version }}"
+          yarn release-notes "$version"
+          {
+            echo 'release_notes<<EOF'
+            cat RELEASE_NOTES.md
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.extract_version.outputs.tag || steps.set_version.outputs.tag }}
-          name: Release ${{ steps.extract_version.outputs.version || steps.set_version.outputs.version }}
-          body: |
-            ## Pager ${{ steps.extract_version.outputs.version || steps.set_version.outputs.version }}
-
-            ### Changes
-            - See commit history for details
-
-            ### Downloads
-            Built artifacts for Windows platform.
+          tag_name: ${{ needs.release.outputs.tag || format('v{0}', github.event.inputs.version) }}
+          name: Release ${{ needs.release.outputs.version || github.event.inputs.version }}
+          body: ${{ steps.release_notes.outputs.release_notes }}
           files: |
             artifacts/**/*
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
           token: ${{ secrets.GITHUB_TOKEN }}
