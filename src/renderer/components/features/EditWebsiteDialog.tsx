@@ -60,10 +60,21 @@ export function EditWebsiteDialog({
   const handleSave = (): void => {
     if (!website) return
 
+    // 智能添加协议前缀（如果没有协议）
+    let normalizedUrl = url.trim()
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      // 对于localhost和IP地址，优先使用http
+      if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
+        normalizedUrl = 'http://' + normalizedUrl
+      } else {
+        normalizedUrl = 'https://' + normalizedUrl
+      }
+    }
+
     const updatedWebsite = {
       ...website,
       name,
-      url,
+      url: normalizedUrl,
       favicon: faviconUrl || undefined,
       fingerprintEnabled,
       fingerprintMode
@@ -75,6 +86,26 @@ export function EditWebsiteDialog({
     setTimeout(() => {
       onOpenChange(false)
     }, 100)
+  }
+
+  // 验证URL是否有效
+  const isValidUrl = (urlString: string): boolean => {
+    let normalizedUrl = urlString.trim()
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      // 对于localhost和IP地址，优先使用http
+      if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
+        normalizedUrl = 'http://' + normalizedUrl
+      } else {
+        normalizedUrl = 'https://' + normalizedUrl
+      }
+    }
+
+    try {
+      const url = new URL(normalizedUrl)
+      return url.protocol === 'http:' || url.protocol === 'https:'
+    } catch {
+      return false
+    }
   }
 
   const handleRefreshFavicon = async (): Promise<void> => {
@@ -206,9 +237,11 @@ export function EditWebsiteDialog({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={!name.trim() || !url.trim()}
+            disabled={!name.trim() || !url.trim() || !isValidUrl(url)}
             aria-label={
-              !name.trim() || !url.trim() ? t('enterNameAndUrlToSave') : t('saveWebsiteChanges')
+              !name.trim() || !url.trim() || !isValidUrl(url)
+                ? t('enterNameAndUrlToSave')
+                : t('saveWebsiteChanges')
             }
           >
             {t('save')}

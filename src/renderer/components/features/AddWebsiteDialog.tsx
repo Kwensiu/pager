@@ -69,8 +69,19 @@ export function AddWebsiteDialog({
   }
 
   const isValidUrl = (urlString: string): boolean => {
+    // 自动添加协议前缀（如果没有协议）
+    let normalizedUrl = urlString.trim()
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      // 对于localhost和IP地址，优先使用http
+      if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
+        normalizedUrl = 'http://' + normalizedUrl
+      } else {
+        normalizedUrl = 'https://' + normalizedUrl
+      }
+    }
+
     try {
-      const url = new URL(urlString)
+      const url = new URL(normalizedUrl)
       return url.protocol === 'http:' || url.protocol === 'https:'
     } catch {
       return false
@@ -79,9 +90,20 @@ export function AddWebsiteDialog({
 
   const handleSubmit = (): void => {
     if (validate()) {
+      // 智能添加协议前缀（如果没有协议）
+      let normalizedUrl = url.trim()
+      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        // 对于localhost和IP地址，优先使用http
+        if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
+          normalizedUrl = 'http://' + normalizedUrl
+        } else {
+          normalizedUrl = 'https://' + normalizedUrl
+        }
+      }
+
       onAddWebsite({
         name: name.trim(),
-        url: url.trim(),
+        url: normalizedUrl,
         description: description.trim() || undefined,
         fingerprintEnabled: fingerprintEnabled,
         fingerprintMode: fingerprintMode,

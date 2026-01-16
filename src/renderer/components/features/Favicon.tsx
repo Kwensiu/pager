@@ -27,7 +27,16 @@ const Favicon: FC<FaviconProps> = ({ url, className, preload = false }) => {
         setFaviconUrl(result)
       } else {
         // 如果 API 不可用，使用原始方法作为后备
-        const parsedUrl = new URL(url)
+        // 确保URL有协议前缀
+        let normalizedUrl = url
+        if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+          if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
+            normalizedUrl = 'http://' + normalizedUrl
+          } else {
+            normalizedUrl = 'https://' + normalizedUrl
+          }
+        }
+        const parsedUrl = new URL(normalizedUrl)
         const fallbackUrl = `${parsedUrl.origin}/favicon.ico`
         setFaviconUrl(fallbackUrl)
       }
@@ -129,7 +138,19 @@ const Favicon: FC<FaviconProps> = ({ url, className, preload = false }) => {
         src={faviconUrl}
         alt={`${(() => {
           try {
-            const parsedUrl = new URL(url)
+            // 确保URL有协议前缀
+            let normalizedUrl = url
+            if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+              if (
+                normalizedUrl.startsWith('localhost') ||
+                /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)
+              ) {
+                normalizedUrl = 'http://' + normalizedUrl
+              } else {
+                normalizedUrl = 'https://' + normalizedUrl
+              }
+            }
+            const parsedUrl = new URL(normalizedUrl)
             return parsedUrl.hostname
           } catch {
             // 如果URL格式不正确，直接使用原始URL作为alt文本的一部分

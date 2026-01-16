@@ -72,9 +72,14 @@ export const NavigationToolbar = ({
     if (onNavigate && editUrl.trim()) {
       let navigateUrl = editUrl.trim()
 
-      // 如果没有协议，添加 https://
+      // 智能添加协议前缀（如果没有协议）
       if (!navigateUrl.startsWith('http://') && !navigateUrl.startsWith('https://')) {
-        navigateUrl = 'https://' + navigateUrl
+        // 对于localhost和IP地址，优先使用http
+        if (navigateUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(navigateUrl)) {
+          navigateUrl = 'http://' + navigateUrl
+        } else {
+          navigateUrl = 'https://' + navigateUrl
+        }
       }
 
       onNavigate(navigateUrl)
