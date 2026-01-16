@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, session } from 'electron'
 import {
   createWindow,
   registerCertificateErrorHandler,
@@ -8,6 +8,7 @@ import { registerIpcHandlers } from './ipc'
 import { ExtensionManager } from './extensions/extensionManager'
 import { extensionIsolationManager } from './services/extensionIsolation'
 import { extensionPermissionManager } from './services/extensionPermissionManager'
+import { sessionIsolationService } from './services/sessionIsolation'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -77,7 +78,38 @@ app.on('window-all-closed', () => {
 })
 
 // 应用退出时清理资源
-app.on('before-quit', () => {
-  // 销毁扩展隔离管理器
-  extensionIsolationManager.destroy()
+app.on('before-quit', async () => {
+  try {
+    // 获取当前设置
+    const { storeService } = await import('./services/store')
+    const settings = await storeService.getSettings()
+
+    // 如果启用了保存会话，保存当前会话状态
+    if (settings.saveSession) {
+      // 会话数据已经通过 sessionManager 自动保存
+      console.log('Session data saved on exit')
+    }
+
+    // 如果启用了退出时清除缓存，清除所有缓存
+    if (settings.clearCacheOnExit) {
+      try {
+        // 清除所有会话的缓存
+        await sessionIsolationService.clearAllSessions()
+
+        // 清除默认会话缓存
+        const defaultSession = session.defaultSession
+        await defaultSession.clearCache()
+        await defaultSession.clearStorageData()
+
+        console.log('Cache cleared on exit')
+      } catch (error) {
+        console.error('Failed to clear cache on exit:', error)
+      }
+    }
+
+    // 销毁扩展隔离管理器
+    extensionIsolationManager.destroy()
+  } catch (error) {
+    console.error('Error during app shutdown:', error)
+  }
 })

@@ -70,14 +70,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
         if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
           // 打开选定的目录
-          const { shell } = await import('electron')
-          await shell.openPath(result.filePaths[0])
+          await window.api.shell.openPath(result.filePaths[0])
         }
       } else {
         // 如果API不可用，尝试直接打开当前数据路径
         if (dataPath) {
-          const { shell } = await import('electron')
-          await shell.openPath(dataPath)
+          await window.api.shell.openPath(dataPath)
         }
       }
     } catch (error) {
@@ -154,16 +152,16 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const handleSettingChange = async (key: keyof typeof settings, value: unknown): Promise<void> => {
     // 立即更新 UI 状态
     updateSettings({ [key]: value } as Partial<typeof settings>)
-    
+
     // 对于某些特殊设置，延迟应用以避免状态冲突
     const settingsRequiringDelay = [
       'windowAlwaysOnTop',
-      'windowMiniMode', 
+      'windowMiniMode',
       'windowAdsorptionEnabled',
       'memoryOptimizerEnabled',
       'autoLaunchEnabled'
     ]
-    
+
     if (settingsRequiringDelay.includes(key)) {
       // 延迟应用设置，给系统状态同步时间
       setTimeout(async () => {

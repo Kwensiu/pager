@@ -183,9 +183,9 @@ export function useSettings(): {
       if (JSON.stringify(prev) === JSON.stringify(updated)) {
         return prev
       }
-      
+
       localStorage.setItem('settings', JSON.stringify(updated))
-      
+
       // 手动触发 storage 事件，确保同一个标签页内的组件也能收到更新
       // 但避免循环触发
       try {
@@ -201,7 +201,7 @@ export function useSettings(): {
       } catch (error) {
         console.warn('Failed to dispatch storage event:', error)
       }
-      
+
       return updated
     })
   }

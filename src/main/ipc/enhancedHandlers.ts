@@ -14,6 +14,7 @@ import { extensionEnhancer } from '../services/extensionEnhancer'
 import { versionChecker } from '../services/versionChecker'
 import { sessionIsolationService } from '../services/sessionIsolation'
 import { crashHandler } from '../services/crashHandler'
+import { sessionManager } from '../services/sessionManager'
 import type { ExtensionInfo } from '../extensions/types'
 
 /**
@@ -359,6 +360,31 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
     return crashHandler.sendCrashReport(reportId)
   })
 
+  // ===== 会话管理 =====
+  ipcMain.handle('session:add-update', async (_, websiteId: string, url: string, title: string) => {
+    return sessionManager.addOrUpdateSession(websiteId, url, title)
+  })
+
+  ipcMain.handle('session:remove', async (_, websiteId: string) => {
+    return sessionManager.removeSession(websiteId)
+  })
+
+  ipcMain.handle('session:get-all', async () => {
+    return sessionManager.getAllSessions()
+  })
+
+  ipcMain.handle('session:get', async (_, websiteId: string) => {
+    return sessionManager.getSession(websiteId)
+  })
+
+  ipcMain.handle('session:clear-all', async () => {
+    return sessionManager.clearAllSessions()
+  })
+
+  ipcMain.handle('session:get-stats', async () => {
+    return sessionManager.getSessionStats()
+  })
+
   // ===== 通用功能 =====
   ipcMain.handle('enhanced:get-all-features', async () => {
     return {
@@ -376,7 +402,8 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
       extensionEnhancer: extensionEnhancer.getExtensionStats(),
       versionChecker: versionChecker.getUpdateStats(),
       sessionIsolation: (await sessionIsolationService.getAllIsolatedWebsites()).length > 0,
-      crashHandler: crashHandler.getCrashStats()
+      crashHandler: crashHandler.getCrashStats(),
+      sessionManager: sessionManager.getSessionStats()
     }
   })
 

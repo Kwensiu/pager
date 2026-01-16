@@ -70,6 +70,14 @@ export interface Settings {
   howLinkOpenMethod?: 'tuboshu' | 'external' // 链接打开方式
   // 扩展管理设置
   extensionSettings?: ExtensionSettings
+
+  // 隐私设置
+  enableJavaScript?: boolean
+  allowPopups?: boolean
+  sessionIsolationEnabled?: boolean
+  crashReportingEnabled?: boolean
+  saveSession?: boolean
+  clearCacheOnExit?: boolean
 }
 
 export interface ExtensionSettings {

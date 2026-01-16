@@ -16,6 +16,11 @@ export default defineConfig({
         '@renderer': resolve(__dirname, './src/renderer')
       }
     },
+    build: {
+      rollupOptions: {
+        external: ['electron', 'fs', 'path']
+      }
+    },
     plugins: [react()],
     css: {
       postcss: resolve(__dirname, 'postcss.config.js')

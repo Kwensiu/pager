@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, forwardRef, useCallback } from 'react'
 import { NavigationToolbar } from './NavigationToolbar'
+import { useSettings } from '@/hooks/useSettings'
 
 // 定义 Electron WebView 元素的类型
 interface WebViewElement extends HTMLWebViewElement {
@@ -17,7 +18,7 @@ interface WebViewElement extends HTMLWebViewElement {
 // 扩展 HTMLWebViewElement 接口以包含 Electron 特定属性
 declare global {
   interface HTMLWebViewElement {
-    allowpopups?: string
+    allowpopups?: boolean
     partition?: string
   }
 }
@@ -53,6 +54,7 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
     ref
   ) => {
     const webviewRef = useRef<WebViewElement>(null)
+    const { settings } = useSettings()
 
     // 使用固定的共享 session，以便扩展可以在所有 webview 中工作
     const partition = 'persist:webview-shared'
@@ -534,10 +536,10 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
             ref={webviewCallbackRef}
             src={url}
             style={{ width: '100%', height: '100%', border: 'none' }}
-            {...({ allowpopups: '' } as React.HTMLAttributes<HTMLElement>)}
+            {...({ allowpopups: settings.allowPopups } as React.HTMLAttributes<HTMLElement>)}
             {...({ partition } as React.HTMLAttributes<HTMLElement>)}
             {...({
-              webpreferences: 'contextIsolation=yes, nodeIntegration=no, javascript=yes'
+              webpreferences: `contextIsolation=yes, nodeIntegration=no, javascript=${settings.enableJavaScript ? 'yes' : 'no'}`
             } as React.HTMLAttributes<HTMLElement>)}
           />
         </div>
