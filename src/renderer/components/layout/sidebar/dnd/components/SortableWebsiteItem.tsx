@@ -101,10 +101,16 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
   }, [])
 
   const handleClick = useCallback((): void => {
+    // 如果开启了自动关闭设置功能，发送关闭设置页面的命令
+    if (settings.autoCloseSettingsOnWebsiteClick) {
+      // 发送自定义事件到父组件
+      window.dispatchEvent(new CustomEvent('closeSettings'))
+    }
+
     if (onClick && !isDragging) {
       onClick(website)
     }
-  }, [onClick, isDragging, website])
+  }, [onClick, isDragging, website, settings.autoCloseSettingsOnWebsiteClick])
 
   // 处理键盘事件 - 使用useCallback
   const handleKeyDown = useCallback(

@@ -107,6 +107,7 @@ export interface Settings {
   // 快速跳转网站设置
   quickResetWebsite?: boolean // 允许左键双击网站按钮时跳转到初始URL
   resetWebsiteConfirmDialog?: boolean // 跳转网页时提示确认弹窗
+  autoCloseSettingsOnWebsiteClick?: boolean // 点击网站时自动关闭设置页面
 }
 
 export interface ExtensionSettings {

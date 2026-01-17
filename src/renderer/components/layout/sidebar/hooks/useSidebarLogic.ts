@@ -294,6 +294,7 @@ export function useSidebarLogic({
 
   const handleWebsiteClick = (website: Website): void => {
     setCurrentWebsite(website)
+
     if (onWebsiteClick) {
       onWebsiteClick(website)
     }

@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react'
 import {
   SidebarProvider,
   SidebarInset,
@@ -20,7 +21,6 @@ import { EditPrimaryGroupDialog } from '@/components/features/EditPrimaryGroupDi
 import { ConfirmDialog } from '@/components/features/ConfirmDialog'
 import SettingsDialog from '@/components/features/SettingsDialog'
 import { Website } from '@/types/website'
-import { useState } from 'react'
 import { useSettings } from '@/hooks/useSettings'
 
 interface SidebarLayoutProps {
@@ -120,6 +120,18 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
     setClearSoftwareDataDialogOpen,
     setClearCacheDialogOpen
   } = useSidebarLogic({ activeWebsiteId, onWebsiteClick })
+
+  // 监听关闭设置页面的事件
+  useEffect(() => {
+    const handleCloseSettings = (): void => {
+      setShowSettings(false)
+    }
+
+    window.addEventListener('closeSettings', handleCloseSettings)
+    return (): void => {
+      window.removeEventListener('closeSettings', handleCloseSettings)
+    }
+  }, [setShowSettings])
 
   return (
     <>

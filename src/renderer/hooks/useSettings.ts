@@ -29,7 +29,8 @@ const defaultSettings: Settings = {
   allowLocalFileAccess: false, // 默认关闭本地文件访问
   // 快速跳转网站设置
   quickResetWebsite: true, // 默认开启快速跳转网站功能
-  resetWebsiteConfirmDialog: true // 默认开启确认弹窗
+  resetWebsiteConfirmDialog: true, // 默认开启确认弹窗
+  autoCloseSettingsOnWebsiteClick: true // 默认开启点击网站时自动关闭设置
 }
 
 export function useSettings(): {

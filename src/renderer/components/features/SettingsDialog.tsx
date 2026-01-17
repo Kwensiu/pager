@@ -285,6 +285,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       // 快速跳转网站设置
       quickResetWebsite: true,
       resetWebsiteConfirmDialog: true,
+      autoCloseSettingsOnWebsiteClick: true,
       isOpenDevTools: false,
       isOpenZoom: false,
       isOpenContextMenu: false,
@@ -670,6 +671,21 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 </div>
               </div>
             )}
+
+            <Separator />
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>自动关闭设置</Label>
+                <p className="text-sm text-muted-foreground">点击网站时自动关闭设置页面</p>
+              </div>
+              <Switch
+                checked={settings.autoCloseSettingsOnWebsiteClick}
+                onCheckedChange={(checked) =>
+                  handleSettingChange('autoCloseSettingsOnWebsiteClick', checked)
+                }
+              />
+            </div>
           </div>
         </TabsContent>
 
