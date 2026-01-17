@@ -242,7 +242,7 @@ export const api = {
       setThreshold: (mb: number) => ipcRenderer.invoke('memory-optimizer:set-threshold', mb)
     },
 
-    // 数据同步
+    // 数据导入导出
     dataSync: {
       exportConfig: (options?: Record<string, unknown>) =>
         ipcRenderer.invoke('data-sync:export-config', options),

@@ -52,16 +52,6 @@
       "sendReports": "发送崩溃报告",
       "title": "进程崩溃处理"
     },
-    "dataSync": {
-      "description": "同步配置和 Cookie 数据",
-      "enabled": "启用数据同步",
-      "exportConfig": "导出配置",
-      "exportCookies": "导出 Cookie",
-      "importConfig": "导入配置",
-      "importCookies": "导入 Cookie",
-      "syncInterval": "同步间隔（小时）",
-      "title": "数据同步"
-    },
     "description": "高级功能和优化设置",
     "fingerprint": {
       "advanced": "高级模式",

@@ -371,7 +371,7 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
     return memoryOptimizerService.setMemoryThreshold(mb)
   })
 
-  // ===== 数据同步 =====
+  // ===== 数据导入导出 =====
   ipcMain.handle('data-sync:export-config', async (_, data?: Record<string, unknown>) => {
     return dataSyncService.exportConfig(data || {})
   })

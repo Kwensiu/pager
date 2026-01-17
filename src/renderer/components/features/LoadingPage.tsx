@@ -227,8 +227,8 @@ export const AppLaunchLoadingPage: React.FC<Omit<LoadingPageProps, 'title' | 'su
 ) => <LoadingPage title="正在启动 Pager" subtitle="初始化应用环境" showLogo={true} {...props} />
 
 /**
- * 数据同步加载页面组件
+ * 数据导入导出加载页面组件
  */
 export const DataSyncLoadingPage: React.FC<Omit<LoadingPageProps, 'title' | 'subtitle'>> = (
   props
-) => <LoadingPage title="正在同步数据" subtitle="请勿关闭应用" showLogo={false} {...props} />
+) => <LoadingPage title="正在导入导出数据" subtitle="请勿关闭应用" showLogo={false} {...props} />

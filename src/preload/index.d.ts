@@ -462,7 +462,7 @@ declare global {
           } | null>
           setThreshold: (mb: number) => Promise<void>
         }
-        // 数据同步
+        // 数据导入导出
         dataSync: {
           exportConfig: (options?: Record<string, unknown>) => Promise<Record<string, unknown>>
           importConfig: (filePath: string) => Promise<boolean>

@@ -1417,6 +1417,12 @@ export async function registerIpcHandlers(mainWindow: Electron.BrowserWindow): P
     return storeService.resetToDefaults(defaultGroups)
   })
 
+  // 清除所有数据
+  ipcMain.handle('store:clear-all', async () => {
+    const storeService = await getStoreService()
+    return storeService.clearAll()
+  })
+
   // 获取数据路径
   ipcMain.handle('store:get-data-path', () => {
     try {

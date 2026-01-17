@@ -87,8 +87,6 @@ export interface Settings {
   clearInactiveSessionCache?: boolean // 清理不活跃会话缓存
   clearInactiveCookies?: boolean // 清理不活跃Cookie
   clearInactiveLocalStorage?: boolean // 清理不活跃本地存储
-  autoSyncEnabled?: boolean // 自动同步
-  syncInterval?: number // 同步间隔
   proxyEnabled?: boolean // 代理启用
   proxyRules?: string // 代理规则
   proxySoftwareOnly?: boolean // 仅代理软件本体，不代理网页内容
@@ -142,7 +140,7 @@ export interface Shortcut {
   isOpen: boolean
 }
 
-// 数据同步配置
+// 数据导入导出配置
 export interface DataSyncConfig {
   lastExportTime?: number
   lastImportTime?: number

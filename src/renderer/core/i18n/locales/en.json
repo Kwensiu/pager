@@ -52,16 +52,6 @@
       "sendReports": "Send Crash Reports",
       "title": "Process Crash Handler"
     },
-    "dataSync": {
-      "description": "Sync configuration and Cookie data",
-      "enabled": "Enable Data Sync",
-      "exportConfig": "Export Configuration",
-      "exportCookies": "Export Cookies",
-      "importConfig": "Import Configuration",
-      "importCookies": "Import Cookies",
-      "syncInterval": "Sync Interval (hours)",
-      "title": "Data Sync"
-    },
     "description": "Advanced features and optimization settings",
     "fingerprint": {
       "advanced": "Advanced Mode",

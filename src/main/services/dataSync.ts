@@ -5,7 +5,7 @@ import path from 'path'
 import type { Website, Shortcut, Settings } from '../../shared/types/store'
 
 /**
- * 数据同步服务
+ * 数据导入导出服务
  * 处理配置和 Cookie 数据的导出/导入
  */
 class DataSyncService {
@@ -45,8 +45,6 @@ class DataSyncService {
     'memoryOptimizerEnabled',
     'memoryCleanInterval',
     'maxInactiveTime',
-    'autoSyncEnabled',
-    'syncInterval',
     'isAutoLaunch',
     'proxyEnabled',
     'proxyRules',

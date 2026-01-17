@@ -55,6 +55,11 @@ async function getStore(): Promise<ElectronStore> {
           collapsedSidebarMode: 'all',
           dataPath: '',
 
+          // 快速跳转网站设置
+          quickResetWebsite: true,
+          resetWebsiteConfirmDialog: true,
+          autoCloseSettingsOnWebsiteClick: true,
+
           // 全局快捷键
           shortcutsEnabled: true,
           shortcutAlwaysOnTop: 'Ctrl+Shift+T',
@@ -74,10 +79,12 @@ async function getStore(): Promise<ElectronStore> {
           memoryOptimizerEnabled: true,
           memoryCleanInterval: 30,
           maxInactiveTime: 60,
-
-          // 数据同步
-          autoSyncEnabled: false,
-          syncInterval: 24,
+          // 内存清理选项
+          enableGarbageCollection: true,
+          enableEmergencyCleanup: true,
+          clearInactiveSessionCache: false,
+          clearInactiveCookies: false,
+          clearInactiveLocalStorage: false,
 
           // 自动启动
           isAutoLaunch: false,
@@ -85,6 +92,7 @@ async function getStore(): Promise<ElectronStore> {
           // 代理支持
           proxyEnabled: false,
           proxyRules: '',
+          proxySoftwareOnly: true,
 
           // 版本检查
           autoCheckUpdates: true,
@@ -98,7 +106,8 @@ async function getStore(): Promise<ElectronStore> {
 
           // 浏览器设置
           enableJavaScript: true,
-          allowPopups: true,
+          allowPopups: false,
+          allowLocalFileAccess: false,
 
           // 隐私与数据
           saveSession: true,

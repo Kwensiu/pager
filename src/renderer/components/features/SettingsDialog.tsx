@@ -37,6 +37,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const [showExtensionManager, setShowExtensionManager] = useState(false)
   const [showCrashConfirmDialog, setShowCrashConfirmDialog] = useState(false)
   const [showClearCacheSettingsDialog, setShowClearCacheSettingsDialog] = useState(false)
+  const [showClearDataConfirmDialog, setShowClearDataConfirmDialog] = useState(false)
 
   // 内存统计状态
   const [memoryStats, setMemoryStats] = useState<{
@@ -165,6 +166,31 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     }
   }
 
+  // 处理清除所有数据
+  const handleClearData = async (): Promise<void> => {
+    try {
+      if (window.api?.store?.clearAll) {
+        await window.api.store.clearAll()
+        alert('所有数据已清除，应用即将关闭')
+        setShowClearDataConfirmDialog(false)
+
+        // 延迟关闭应用，让用户看到成功提示
+        setTimeout(() => {
+          if (window.api?.enhanced?.windowManager?.exitApp) {
+            window.api.enhanced.windowManager.exitApp()
+          }
+        }, 1500)
+      } else {
+        alert('清除数据功能不可用')
+        setShowClearDataConfirmDialog(false)
+      }
+    } catch (error) {
+      console.error('清除数据失败:', error)
+      alert('清除数据失败')
+      setShowClearDataConfirmDialog(false)
+    }
+  }
+
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
   const [updateInfo, setUpdateInfo] = useState<{
     currentVersion: string
@@ -244,20 +270,16 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   // 打开数据目录
   const openDataDirectory = async (): Promise<void> => {
     try {
-      const { api } = window
-      if (api?.dialog?.openDirectory) {
-        const result = await api.dialog.openDirectory({
-          properties: ['openDirectory']
-        })
-
-        if (!result.canceled && result.filePaths && result.filePaths.length > 0) {
-          // 打开选定的目录
-          await window.api.shell.openPath(result.filePaths[0])
-        }
+      if (dataPath) {
+        // 直接打开当前数据目录
+        await window.api.shell.openPath(dataPath)
       } else {
-        // 如果API不可用，尝试直接打开当前数据路径
-        if (dataPath) {
-          await window.api.shell.openPath(dataPath)
+        // 如果没有数据路径，尝试获取用户数据目录
+        const result = await window.api.store.getDataPath()
+        if (result.success && result.path) {
+          await window.api.shell.openPath(result.path)
+        } else {
+          alert('无法获取数据目录路径')
         }
       }
     } catch (error) {
@@ -362,6 +384,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       autoCheckUpdates: true,
       minimizeToTray: true,
       collapsedSidebarMode: 'all',
+      // 快速跳转网站设置
+      quickResetWebsite: true,
+      resetWebsiteConfirmDialog: true,
+      autoCloseSettingsOnWebsiteClick: true,
       shortcutsEnabled: true,
       shortcutAlwaysOnTop: 'Ctrl+Shift+T',
       shortcutMiniMode: 'Ctrl+Shift+M',
@@ -369,23 +395,22 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       trayShowNotifications: true,
       windowAlwaysOnTop: false,
       windowMiniMode: false,
-      memoryOptimizerEnabled: false,
-      memoryCleanInterval: 60,
-      maxInactiveTime: 30,
+      memoryOptimizerEnabled: true,
+      memoryCleanInterval: 30,
+      maxInactiveTime: 60,
+      // 内存清理选项
       enableGarbageCollection: true,
       enableEmergencyCleanup: true,
       clearInactiveSessionCache: false,
       clearInactiveCookies: false,
       clearInactiveLocalStorage: false,
-      autoSyncEnabled: false,
-      syncInterval: 24,
       isAutoLaunch: false,
       proxyEnabled: false,
       proxyRules: '',
-      proxySoftwareOnly: true, // 仅代理软件本体，不代理网页内容
-      sessionIsolationEnabled: false,
-      crashReportingEnabled: false,
-      saveSession: false,
+      proxySoftwareOnly: true,
+      sessionIsolationEnabled: true,
+      crashReportingEnabled: true,
+      saveSession: true,
       clearCacheOnExit: false,
       clearCacheOptions: {
         clearStorageData: false,
@@ -394,10 +419,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         clearDefaultSession: true
       },
       allowLocalFileAccess: false,
-      // 快速跳转网站设置
-      quickResetWebsite: true,
-      resetWebsiteConfirmDialog: true,
-      autoCloseSettingsOnWebsiteClick: true,
+      enableJavaScript: true,
+      allowPopups: false,
       isOpenDevTools: false,
       isOpenZoom: false,
       isOpenContextMenu: false,
@@ -496,7 +519,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     try {
       const { api } = window
       if (!api?.store) {
-        alert('数据同步功能不可用')
+        alert('导出功能不可用')
         return
       }
 
@@ -547,7 +570,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     try {
       const { api } = window
       if (!api?.store) {
-        alert('数据同步功能不可用')
+        alert('导入功能不可用')
         return
       }
 
@@ -1326,20 +1349,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 )}
               </div>
             </div>
-
-            <Separator />
-
-            {/* 数据同步设置 */}
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>数据同步</Label>
-                <p className="text-sm text-muted-foreground">自动同步配置和 Cookie</p>
-              </div>
-              <Switch
-                checked={settings.autoSyncEnabled}
-                onCheckedChange={(checked) => handleSettingChange('autoSyncEnabled', checked)}
-              />
-            </div>
           </div>
         </TabsContent>
 
@@ -1409,17 +1418,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                   恢复默认设置
                 </Button>
                 <Button
-                  onClick={() => {
-                    // 清除所有数据功能
-                    if (confirm('确定要清除所有数据吗？此操作不可恢复！')) {
-                      if (window.api?.store?.clearAll) {
-                        window.api.store.clearAll()
-                        alert('所有数据已清除')
-                      } else {
-                        alert('清除数据功能不可用')
-                      }
-                    }
-                  }}
+                  onClick={() => setShowClearDataConfirmDialog(true)}
                   variant="destructive"
                   size="sm"
                 >
@@ -1569,6 +1568,36 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             </Button>
             <Button onClick={() => setShowClearCacheSettingsDialog(false)}>
               {t('confirm', '确定')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 清除数据确认对话框 */}
+      <Dialog open={showClearDataConfirmDialog} onOpenChange={setShowClearDataConfirmDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              确认清除所有数据
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2">
+                <div>
+                  <strong>警告：</strong>此操作将清除所有应用数据，包括设置、网站、会话等。
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  此操作不可恢复，请确保您已备份重要数据。您确定要继续吗？
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowClearDataConfirmDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleClearData}>
+              确认清除
             </Button>
           </div>
         </DialogContent>
