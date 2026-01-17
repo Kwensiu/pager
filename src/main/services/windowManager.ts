@@ -22,6 +22,14 @@ class WindowManager {
   }
 
   /**
+   * 获取主窗口
+   * @returns 主窗口实例
+   */
+  getMainWindow(): BrowserWindow | null {
+    return this.mainWindow
+  }
+
+  /**
    * 保存原始窗口边界
    */
   private saveOriginalBounds(): void {
@@ -49,7 +57,14 @@ class WindowManager {
     this.alwaysOnTop = !this.alwaysOnTop
     this.mainWindow.setAlwaysOnTop(this.alwaysOnTop)
 
-    console.log(`Always on top: ${this.alwaysOnTop}`)
+    return this.alwaysOnTop
+  }
+
+  /**
+   * 获取窗口置顶状态
+   * @returns 当前置顶状态
+   */
+  getAlwaysOnTopState(): boolean {
     return this.alwaysOnTop
   }
 
@@ -62,8 +77,6 @@ class WindowManager {
 
     this.alwaysOnTop = enabled
     this.mainWindow.setAlwaysOnTop(enabled)
-
-    console.log(`Always on top set to: ${enabled}`)
   }
 
   /**
@@ -155,8 +168,6 @@ class WindowManager {
       this.miniMode = false
       this.exitMiniMode()
     }
-
-    console.log(`Mini mode set to: ${enabled}`)
   }
 
   /**
@@ -240,66 +251,12 @@ class WindowManager {
   }
 
   /**
-   * 窗口吸附到屏幕边缘
-   * @param edge 边缘位置 ('left' | 'right' | 'top' | 'bottom')
-   */
-  snapToEdge(edge: 'left' | 'right' | 'top' | 'bottom'): void {
-    if (!this.mainWindow) return
-
-    const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint())
-    const workArea = display.workArea
-
-    let newBounds: Electron.Rectangle
-
-    switch (edge) {
-      case 'left':
-        newBounds = {
-          x: workArea.x,
-          y: workArea.y,
-          width: Math.floor(workArea.width / 2),
-          height: workArea.height
-        }
-        break
-      case 'right':
-        newBounds = {
-          x: workArea.x + Math.floor(workArea.width / 2),
-          y: workArea.y,
-          width: Math.floor(workArea.width / 2),
-          height: workArea.height
-        }
-        break
-      case 'top':
-        newBounds = {
-          x: workArea.x,
-          y: workArea.y,
-          width: workArea.width,
-          height: Math.floor(workArea.height / 2)
-        }
-        break
-      case 'bottom':
-        newBounds = {
-          x: workArea.x,
-          y: workArea.y + Math.floor(workArea.height / 2),
-          width: workArea.width,
-          height: Math.floor(workArea.height / 2)
-        }
-        break
-      default:
-        return
-    }
-
-    this.mainWindow.setBounds(newBounds)
-    console.log(`Window snapped to ${edge} edge`)
-  }
-
-  /**
    * 窗口居中显示
    */
   centerWindow(): void {
     if (!this.mainWindow) return
 
     this.mainWindow.center()
-    console.log('Window centered')
   }
 
   /**
@@ -354,8 +311,6 @@ class WindowManager {
 
     const clampedOpacity = Math.max(0.1, Math.min(1.0, opacity))
     this.mainWindow.setOpacity(clampedOpacity)
-
-    console.log(`Window opacity set to: ${clampedOpacity}`)
   }
 
   /**
@@ -367,7 +322,6 @@ class WindowManager {
     if (!this.mainWindow) return
 
     this.mainWindow.setSize(width, height)
-    console.log(`Window size set to: ${width}x${height}`)
   }
 
   /**
@@ -379,7 +333,6 @@ class WindowManager {
     if (!this.mainWindow) return
 
     this.mainWindow.setPosition(x, y)
-    console.log(`Window position set to: (${x}, ${y})`)
   }
 
   /**

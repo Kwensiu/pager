@@ -4,8 +4,9 @@ import type {
   Website,
   WindowState,
   Settings,
-  WebsiteOrderUpdate
-} from '../types/store'
+  WebsiteOrderUpdate,
+  Shortcut
+} from '../../shared/types/store'
 
 // 定义 Store 数据结构类型
 interface StoreSchema {
@@ -13,6 +14,7 @@ interface StoreSchema {
   lastActiveWebsiteId: string | null
   windowState: WindowState
   settings: Settings
+  shortcuts: Shortcut[]
 }
 
 // 定义 Store 的类型接口
@@ -114,7 +116,8 @@ async function getStore(): Promise<ElectronStore> {
 
           // 调试模式
           showDebugOptions: false
-        }
+        },
+        shortcuts: [] // 快捷键配置
       }
     })
     // 打印存储路径以便调试
@@ -499,6 +502,46 @@ export const storeService = {
     const settings = await this.getSettings()
     const s = await getStore()
     s.set('settings', { ...settings, ...updates })
+  },
+
+  // ===== 快捷键相关 =====
+
+  // 获取所有快捷键
+  async getShortcuts() {
+    const s = await getStore()
+    return s.get('shortcuts', [])
+  },
+
+  // 保存所有快捷键
+  async setShortcuts(shortcuts: Shortcut[]) {
+    const s = await getStore()
+    s.set('shortcuts', shortcuts)
+  },
+
+  // 更新单个快捷键
+  async updateShortcut(shortcut: Shortcut) {
+    const shortcuts = await this.getShortcuts()
+    console.log('=== updateShortcut - 当前快捷键列表:', shortcuts, '===')
+    console.log('=== updateShortcut - 要更新的快捷键:', shortcut, '===')
+    const index = shortcuts.findIndex((s) => s.id === shortcut.id)
+    console.log('=== updateShortcut - 找到的索引:', index, '===')
+    if (index >= 0) {
+      shortcuts[index] = shortcut
+      console.log('=== updateShortcut - 更新现有快捷键 ===', '===')
+    } else {
+      shortcuts.push(shortcut)
+      console.log('=== updateShortcut - 添加新快捷键 ===', '===')
+    }
+    console.log('=== updateShortcut - 更新后的快捷键列表:', shortcuts, '===')
+    await this.setShortcuts(shortcuts)
+    console.log('=== updateShortcut - 保存完成 ===', '===')
+  },
+
+  // 删除快捷键
+  async removeShortcut(shortcutId: string) {
+    const shortcuts = await this.getShortcuts()
+    const filtered = shortcuts.filter((s) => s.id !== shortcutId)
+    await this.setShortcuts(filtered)
   },
 
   // ===== 清除数据相关 =====

@@ -203,12 +203,20 @@ export const api = {
     },
     // 全局快捷键
     shortcut: {
-      register: (shortcut: string, action: string) =>
-        ipcRenderer.invoke('shortcut:register', shortcut, action),
-      unregister: (shortcut: string) => ipcRenderer.invoke('shortcut:unregister', shortcut),
+      register: (shortcut: import('../shared/types/store').Shortcut) =>
+        ipcRenderer.invoke('shortcut:register', shortcut),
+      unregister: (cmd: string) => ipcRenderer.invoke('shortcut:unregister', cmd),
       getAll: () => ipcRenderer.invoke('shortcut:get-all'),
       enableAll: () => ipcRenderer.invoke('shortcut:enable-all'),
-      disableAll: () => ipcRenderer.invoke('shortcut:disable-all')
+      disableAll: () => ipcRenderer.invoke('shortcut:disable-all'),
+      update: (shortcut: import('../shared/types/store').Shortcut) =>
+        ipcRenderer.invoke('shortcut:update', shortcut),
+      validate: (cmd: string) => ipcRenderer.invoke('shortcut:validate', cmd),
+      getDefaults: () => ipcRenderer.invoke('shortcut:get-defaults'),
+      checkConflict: (cmd: string, excludeId?: string) =>
+        ipcRenderer.invoke('shortcut:check-conflict', cmd, excludeId),
+      getAllConflicts: (shortcuts: import('../shared/types/store').Shortcut[]) =>
+        ipcRenderer.invoke('shortcut:get-all-conflicts', shortcuts)
     },
 
     // 系统托盘
@@ -289,11 +297,15 @@ export const api = {
 
     // 窗口管理
     windowManager: {
+      toggleWindow: () => ipcRenderer.invoke('window-manager:toggle-window'),
       toggleAlwaysOnTop: () => ipcRenderer.invoke('window-manager:toggle-always-on-top'),
       toggleMiniMode: () => ipcRenderer.invoke('window-manager:toggle-mini-mode'),
       snapToEdge: (edge: 'left' | 'right' | 'top' | 'bottom') =>
         ipcRenderer.invoke('window-manager:snap-to-edge', edge),
-      getState: () => ipcRenderer.invoke('window-manager:get-state')
+      getState: () => ipcRenderer.invoke('window-manager:get-state'),
+      minimizeWindow: () => ipcRenderer.invoke('window-manager:minimize-window'),
+      maximizeWindow: () => ipcRenderer.invoke('window-manager:maximize-window'),
+      exitApp: () => ipcRenderer.invoke('window-manager:exit-app')
     },
 
     // 扩展增强

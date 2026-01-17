@@ -656,6 +656,159 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
       }
     }, [onRefresh])
 
+    // 处理复制URL - 直接使用 webview API
+    const handleCopyUrl = useCallback(async (): Promise<void> => {
+      const webview = webviewRef.current
+      if (!webview?.getURL) {
+        return
+      }
+
+      const currentUrl = webview.getURL()
+      if (!currentUrl) {
+        return
+      }
+
+      try {
+        // 使用Electron的IPC复制到剪贴板
+        if (window.electron?.ipcRenderer) {
+          await window.electron.ipcRenderer.invoke('window-manager:copy-to-clipboard', currentUrl)
+          await showSuccessNotification({
+            title: 'URL已复制',
+            body: currentUrl
+          })
+        }
+      } catch (error) {
+        await showErrorNotification('URL复制失败', error)
+      }
+    }, [])
+
+    // 创建统一的键盘事件处理器
+    const createKeyboardHandler = useCallback((
+      event: KeyboardEvent,
+      handlers: Record<string, () => void>
+    ) => {
+      if (matchesPredefinedShortcut(event, 'REFRESH_PAGE')) {
+        event.preventDefault()
+        handlers.refresh?.()
+      }
+      
+      if (matchesPredefinedShortcut(event, 'COPY_URL')) {
+        event.preventDefault()
+        handlers.copyUrl?.()
+      }
+    }, [])
+
+    // 监听WebView的键盘事件（应用内模式）
+    useEffect(() => {
+      const webview = webviewRef.current
+      if (!webview) return
+
+      const handleKeyDown = (event: KeyboardEvent): void => {
+        createKeyboardHandler(event, {
+          refresh: handleRefresh,
+          copyUrl: handleCopyUrl
+        })
+      }
+
+      // 监听WebView的键盘事件
+      webview.addEventListener('keydown', handleKeyDown)
+
+      return (): void => {
+        webview.removeEventListener('keydown', handleKeyDown)
+      }
+    }, [handleRefresh, handleCopyUrl, createKeyboardHandler])
+
+    // 监听文档级别的键盘事件（应用内快捷键）
+    useEffect(() => {
+      const handleKeyDown = (event: KeyboardEvent): void => {
+        createKeyboardHandler(event, {
+          copyUrl: handleCopyUrl
+        })
+      }
+
+      // 监听文档级别的键盘事件
+      document.addEventListener('keydown', handleKeyDown)
+
+      return (): void => {
+        document.removeEventListener('keydown', handleKeyDown)
+      }
+    }, [handleCopyUrl, createKeyboardHandler])
+
+    // 监听快捷键刷新消息（全局模式）
+    useEffect(() => {
+      const handleRefreshShortcut = (): void => {
+        // 检查当前WebView是否是活跃的
+        const webview = webviewRef.current
+        if (webview && webview.getURL && webview.getURL()) {
+          // 检查这个WebView是否是当前显示的
+          const isVisible = webview.style.display !== 'none'
+          if (isVisible) {
+            handleRefresh()
+          }
+        }
+      }
+
+      if (window.electron?.ipcRenderer) {
+        window.electron.ipcRenderer.on('window-manager:refresh-page', handleRefreshShortcut)
+      }
+
+      return (): void => {
+        if (window.electron?.ipcRenderer) {
+          window.electron.ipcRenderer.removeListener(
+            'window-manager:refresh-page',
+            handleRefreshShortcut
+          )
+        }
+      }
+    }, [handleRefresh])
+
+    // 监听复制URL消息（全局模式）
+    useEffect(() => {
+      const handleCopyUrlShortcut = (): void => {
+        // 检查当前WebView是否是活跃的
+        const webview = webviewRef.current
+        if (webview && webview.getURL && webview.getURL()) {
+          const currentUrl = webview.getURL()
+          // 检查这个WebView是否是当前显示的
+          const isVisible = webview.style.display !== 'none'
+          if (isVisible) {
+            // 使用Electron的IPC复制到剪贴板
+            if (window.electron?.ipcRenderer) {
+              window.electron.ipcRenderer
+                .invoke('window-manager:copy-to-clipboard', currentUrl)
+                .then(() => {
+                  // 显示通知
+                  window.electron.ipcRenderer.invoke('window-manager:show-notification', {
+                    title: 'URL已复制',
+                    body: currentUrl
+                  })
+                })
+                .catch((error) => {
+                  // 显示错误通知
+                  window.electron.ipcRenderer.invoke('window-manager:show-notification', {
+                    title: 'URL复制失败',
+                    body: error.message || '未知错误'
+                  })
+                })
+            }
+          }
+        }
+      }
+
+      if (window.electron?.ipcRenderer) {
+        window.electron.ipcRenderer.on('window-manager:copy-url', handleCopyUrlShortcut)
+      }
+
+      return (): void => {
+        if (window.electron?.ipcRenderer) {
+          window.electron.ipcRenderer.removeListener(
+            'window-manager:copy-url',
+            handleCopyUrlShortcut
+          )
+        }
+      }
+    }, [])
+
     // 处理导航到新 URL
     const handleNavigate = useCallback(
       (newUrl: string) => {

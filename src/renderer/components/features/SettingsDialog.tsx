@@ -19,6 +19,7 @@ import {
   DialogDescription
 } from '../../ui/dialog'
 import { ExtensionManager } from './ExtensionManager'
+import { ShortcutSettings } from './ShortcutSettings'
 
 interface SettingsDialogProps {
   open?: boolean
@@ -1006,36 +1007,13 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <Separator />
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>全局快捷键</Label>
-                <p className="text-sm text-muted-foreground">启用全局快捷键功能</p>
-              </div>
-              <Switch
-                checked={settings.shortcutsEnabled}
-                onCheckedChange={(checked) => handleSettingChange('shortcutsEnabled', checked)}
-              />
-            </div>
-
-            {settings.shortcutsEnabled && (
-              <div className="pl-4 space-y-4">
-                <div className="space-y-2">
-                  <Label>窗口置顶快捷键</Label>
-                  <Input
-                    value={settings.shortcutAlwaysOnTop}
-                    onChange={(e) => handleSettingChange('shortcutAlwaysOnTop', e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>小窗模式快捷键</Label>
-                  <Input
-                    value={settings.shortcutMiniMode}
-                    onChange={(e) => handleSettingChange('shortcutMiniMode', e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+            {/* 快捷键设置 */}
+            <ShortcutSettings
+              shortcutsEnabled={settings.shortcutsEnabled || false}
+              onShortcutsEnabledChange={(enabled) =>
+                handleSettingChange('shortcutsEnabled', enabled)
+              }
+            />
           </div>
         </TabsContent>
 

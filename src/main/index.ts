@@ -1,16 +1,9 @@
 import { app, BrowserWindow, session } from 'electron'
 import { join } from 'path'
-import {
-  createWindow,
-  registerCertificateErrorHandler,
-  registerRenderProcessGoneHandler
-} from './core/window'
-import { registerIpcHandlers } from './ipc'
-import { ExtensionManager } from './extensions/extensionManager'
-import { extensionIsolationManager } from './services/extensionIsolation'
-import { extensionPermissionManager } from './services/extensionPermissionManager'
-import { sessionIsolationService } from './services/sessionIsolation'
 import { globalProxyService } from './services/proxyService'
+import { shortcutService } from './services/shortcut'
+import { registerIpcHandlers } from './ipc/handlers'
+import { createWindow } from './core/window/index'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -20,15 +13,12 @@ if (process.platform === 'win32') {
 }
 
 app.whenReady().then(async () => {
-  // 动态导入服务以避免循环依赖
+  // ===== 核心服务初始化 =====
   const { storeService } = await import('./services/store')
   const { versionChecker } = await import('./services/versionChecker')
-
-  // 注册全局错误处理器
-  registerCertificateErrorHandler()
-  registerRenderProcessGoneHandler()
-
-  // ===== 命令行安全配置 =====
+  const { ExtensionManager } = await import('./extensions/extensionManager')
+  const { extensionIsolationManager } = await import('./services/extensionIsolation')
+  const { extensionPermissionManager } = await import('./services/extensionPermissionManager')
   // 禁用软件光栅化器
   app.commandLine.appendSwitch('disable-software-rasterizer')
   // 忽略证书错误
@@ -51,12 +41,8 @@ app.whenReady().then(async () => {
   }
 
   // 监听窗口创建事件，设置快捷键优化
-  app.on('browser-window-created', (_, window) => {
-    // 为新窗口设置快捷键优化
-    // 这里简化处理，实际可以添加更多优化
-    window.webContents.on('before-input-event', () => {
-      // 可以在这里添加快捷键处理逻辑
-    })
+  app.on('browser-window-created', (_, _window) => {
+    // 使用渲染进程的键盘监听器处理所有快捷键
   })
 
   // 初始化代理服务
@@ -65,6 +51,32 @@ app.whenReady().then(async () => {
   // 创建窗口
   mainWindow = await createWindow()
   await registerIpcHandlers(mainWindow)
+
+  // 初始化快捷键服务
+  try {
+    const { shortcutService } = await import('./services/shortcut')
+    const { windowManager } = await import('./services/windowManager')
+    const { storeService } = await import('./services/store')
+    windowManager.setMainWindow(mainWindow)
+    shortcutService.setMainWindow(mainWindow)
+
+    // 获取用户保存的快捷键配置，如果没有则使用默认配置
+    const savedShortcuts = await storeService.getShortcuts()
+    console.log('=== 用户保存的快捷键配置:', savedShortcuts.map(s => ({ id: s.id, isOpen: s.isOpen, cmd: s.cmd })), '===')
+    
+    const shortcutsToRegister = savedShortcuts.length > 0 ? savedShortcuts : shortcutService.getDefaultShortcuts()
+    console.log('=== 将要注册的快捷键:', shortcutsToRegister.filter(s => s.isOpen).map(s => ({ id: s.id, isOpen: s.isOpen, cmd: s.cmd })), '===')
+    
+    for (const shortcut of shortcutsToRegister) {
+      if (shortcut.isOpen) {
+        console.log(`=== 注册快捷键: ${shortcut.id} (${shortcut.cmd})`, '===')
+        const callback = shortcutService.createShortcutCallback(shortcut.id)
+        shortcutService.register(shortcut, callback)
+      }
+    }
+  } catch (error) {
+    console.error('初始化快捷键服务失败:', error)
+  }
 
   // 初始化托盘（如果启用最小化到托盘）
   try {
@@ -129,6 +141,8 @@ app.on('window-all-closed', () => {
 // 应用退出时清理资源
 app.on('will-quit', () => {
   globalProxyService.destroy()
+  // 清理所有快捷键
+  shortcutService.unregisterAll()
 })
 
 // 应用退出时清理资源
@@ -157,6 +171,7 @@ app.on('before-quit', async () => {
           options.clearStorageData !== false ||
           options.clearAuthCache !== false
         ) {
+          const { sessionIsolationService } = await import('./services/sessionIsolation')
           await sessionIsolationService.clearAllSessions(options)
         }
 
@@ -178,7 +193,12 @@ app.on('before-quit', async () => {
     }
 
     // 销毁扩展隔离管理器
-    extensionIsolationManager.destroy()
+    try {
+      const { extensionIsolationManager } = await import('./services/extensionIsolation')
+      extensionIsolationManager.destroy()
+    } catch (error) {
+      console.error('Failed to destroy extension isolation manager:', error)
+    }
   } catch (error) {
     console.error('Error during app shutdown:', error)
   }

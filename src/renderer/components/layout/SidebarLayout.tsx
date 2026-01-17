@@ -22,6 +22,7 @@ import { ConfirmDialog } from '@/components/features/ConfirmDialog'
 import SettingsDialog from '@/components/features/SettingsDialog'
 import { Website } from '@/types/website'
 import { useSettings } from '@/hooks/useSettings'
+import type { Shortcut } from '../../../shared/types/store'
 
 interface SidebarLayoutProps {
   children: (currentWebsite: Website | null) => React.ReactNode
@@ -46,9 +47,15 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
   // AddOptionsDialog 状态
   const [isAddOptionsDialogOpen, setIsAddOptionsDialogOpen] = useState(false)
   const [addOptionsPrimaryGroupId, setAddOptionsPrimaryGroupId] = useState<string | null>(null)
+  // 窗口顶置状态
+  const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false)
+  // 快捷键数据
+  const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
+  // 防重复触发状态
+  const [executingShortcuts, setExecutingShortcuts] = useState<Set<string>>(new Set())
 
   // 获取sidebar状态
-  const { state } = useSidebar()
+  const { state, toggleSidebar } = useSidebar()
   const isCollapsed = state === 'collapsed'
 
   const {
@@ -133,9 +140,181 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
     }
   }, [setShowSettings])
 
+  // 获取当前窗口顶置状态
+  useEffect(() => {
+    // 监听窗口顶置状态变化
+    const handleAlwaysOnTopChange = (_event: Electron.IpcRendererEvent, state: boolean): void => {
+      setIsAlwaysOnTop(state)
+    }
+
+    if (window.electron?.ipcRenderer) {
+      window.electron.ipcRenderer.on(
+        'window-manager:always-on-top-changed',
+        handleAlwaysOnTopChange
+      )
+    }
+
+    return (): void => {
+      if (window.electron?.ipcRenderer) {
+        window.electron.ipcRenderer.removeListener(
+          'window-manager:always-on-top-changed',
+          handleAlwaysOnTopChange
+        )
+      }
+    }
+  }, [])
+
+  
+  // 获取当前窗口顶置状态
+  useEffect(() => {
+    const getCurrentAlwaysOnTopState = async (): Promise<void> => {
+      if (window.electron?.ipcRenderer) {
+        try {
+          const state = await window.electron.ipcRenderer.invoke(
+            'window-manager:get-always-on-top-state'
+          )
+          setIsAlwaysOnTop(state)
+        } catch (error) {
+          console.error('Failed to get always on top state:', error)
+        }
+      }
+    }
+
+    // 加载快捷键数据
+    const loadShortcuts = async (): Promise<void> => {
+      if (window.api?.enhanced?.shortcut) {
+        try {
+          const currentShortcuts = await window.api.enhanced.shortcut.getAll()
+          setShortcuts(currentShortcuts)
+        } catch (error) {
+          console.error('Failed to load shortcuts:', error)
+        }
+      }
+    }
+
+    getCurrentAlwaysOnTopState()
+    loadShortcuts()
+  }, [])
+
+  // 监听键盘事件
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      // 检查是否是快捷键组合，且不是修饰键本身
+      if (
+        (event.ctrlKey || event.altKey) &&
+        event.key &&
+        !event.metaKey &&
+        event.key !== 'Control' &&
+        event.key !== 'Shift' &&
+        event.key !== 'Alt' &&
+        event.key !== 'Meta'
+      ) {
+        let shortcut = ''
+
+        // 构建快捷键字符串
+        if (event.ctrlKey) {
+          shortcut += 'Ctrl+'
+        }
+        if (event.altKey) {
+          shortcut += 'Alt+'
+        }
+        if (event.shiftKey) {
+          shortcut += 'Shift+'
+        }
+        shortcut += event.key.toUpperCase()
+
+        // 查找对应的快捷键 - 包括应用内和全局快捷键
+        const registeredShortcut = shortcuts.find((s) => s.cmd === shortcut && s.isOpen)
+
+        if (registeredShortcut) {
+          event.preventDefault()
+
+          // 检查是否正在执行中（防重复触发）
+          if (executingShortcuts.has(registeredShortcut.id)) {
+            return
+          }
+
+          // 标记为正在执行
+          setExecutingShortcuts(prev => new Set(prev).add(registeredShortcut.id))
+
+          // 延迟清除执行标志
+          setTimeout(() => {
+            setExecutingShortcuts(prev => {
+              const newSet = new Set(prev)
+              newSet.delete(registeredShortcut.id)
+              return newSet
+            })
+          }, 100)
+
+          // 执行对应的快捷键动作
+          switch (registeredShortcut.id) {
+            case 'toggle-window':
+              // 软件窗口切换
+              if (window.api?.enhanced?.windowManager) {
+                window.api.enhanced.windowManager.toggleWindow()
+              }
+              break
+            case 'toggle-sidebar':
+              // 直接在渲染进程内执行
+              toggleSidebar()
+              break
+            case 'open-settings':
+              // 直接在渲染进程内执行
+              setShowSettings(!showSettings)
+              break
+            case 'toggle-always-on-top':
+              if (window.electron?.ipcRenderer) {
+                window.electron.ipcRenderer
+                  .invoke('window-manager:toggle-always-on-top')
+                  .then(setIsAlwaysOnTop)
+              }
+              break
+            case 'refresh-page':
+              // 发送刷新消息到主进程
+              if (window.electron?.ipcRenderer) {
+                window.electron.ipcRenderer.send('window-manager:refresh-page')
+              }
+              break
+            case 'copy-url':
+              // 发送复制URL消息到主进程
+              if (window.electron?.ipcRenderer) {
+                window.electron.ipcRenderer.send('window-manager:copy-url')
+              }
+              break
+            case 'minimize-window':
+              // 调用最小化窗口API
+              if (window.api?.enhanced?.windowManager) {
+                window.api.enhanced.windowManager.minimizeWindow()
+              }
+              break
+            case 'maximize-window':
+              // 调用最大化窗口API
+              if (window.api?.enhanced?.windowManager) {
+                window.api.enhanced.windowManager.maximizeWindow()
+              }
+              break
+            case 'exit-app':
+              // 退出应用
+              if (window.api?.enhanced?.windowManager) {
+                window.api.enhanced.windowManager.exitApp()
+              }
+              break
+          }
+        }
+      }
+    }
+
+    // 添加键盘监听器
+    window.addEventListener('keydown', handleKeyDown)
+
+    return (): void => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [shortcuts, setShowSettings, toggleSidebar, showSettings, executingShortcuts])
+
   return (
     <>
-      <div className="flex h-screen w-full">
+      <div className={`flex h-screen w-full ${isAlwaysOnTop ? 'border-4 border-blue-400/30' : ''}`}>
         <Sidebar
           collapsible="icon"
           className="h-full border-r [&_[data-sidebar=rail]]:!hidden will-change-[width] contain-[layout]"

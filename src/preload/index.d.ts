@@ -391,11 +391,37 @@ declare global {
         }
         // 全局快捷键
         shortcut: {
-          register: (shortcut: string, action: string) => Promise<boolean>
-          unregister: (shortcut: string) => Promise<boolean>
-          getAll: () => Promise<Array<{ shortcut: string; action: string }>>
-          enableAll: () => Promise<void>
-          disableAll: () => Promise<void>
+          register: (
+            shortcut: import('../shared/types/store').Shortcut
+          ) => Promise<{ success: boolean; message?: string }>
+          unregister: (cmd: string) => Promise<{ success: boolean; message?: string }>
+          getAll: () => Promise<import('../shared/types/store').Shortcut[]>
+          enableAll: () => Promise<{
+            success: boolean
+            message?: string
+            successCount?: number
+            totalCount?: number
+          }>
+          disableAll: () => Promise<{ success: boolean; message?: string }>
+          update: (
+            shortcut: import('../shared/types/store').Shortcut
+          ) => Promise<{ success: boolean; message?: string }>
+          validate: (cmd: string) => Promise<{ valid: boolean; message?: string }>
+          getDefaults: () => Promise<import('../shared/types/store').Shortcut[]>
+          checkConflict: (
+            cmd: string,
+            excludeId?: string
+          ) => Promise<{
+            hasConflict: boolean
+            conflict: import('../shared/types/store').Shortcut | null
+          }>
+          getAllConflicts: (shortcuts: import('../shared/types/store').Shortcut[]) => Promise<{
+            hasConflicts: boolean
+            conflicts: Array<{
+              shortcut: import('../shared/types/store').Shortcut
+              conflicts: import('../shared/types/store').Shortcut[]
+            }>
+          }>
         }
         // 系统托盘
         tray: {
@@ -496,6 +522,7 @@ declare global {
         }
         // 窗口管理
         windowManager: {
+          toggleWindow: () => Promise<void>
           toggleAlwaysOnTop: () => Promise<void>
           toggleMiniMode: () => Promise<void>
           snapToEdge: (edge: 'left' | 'right' | 'top' | 'bottom') => Promise<void>
@@ -505,6 +532,9 @@ declare global {
             position: { x: number; y: number }
             size: { width: number; height: number }
           }>
+          minimizeWindow: () => Promise<void>
+          maximizeWindow: () => Promise<void>
+          exitApp: () => Promise<void>
         }
         // 扩展增强
         extensionEnhancer: {
