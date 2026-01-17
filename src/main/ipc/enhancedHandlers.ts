@@ -352,7 +352,23 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
   })
 
   ipcMain.handle('memory-optimizer:get-stats', async () => {
-    return memoryOptimizerService.getMemoryStats()
+    return memoryOptimizerService.getDetailedStats()
+  })
+
+  ipcMain.handle('memory-optimizer:mark-active', async (_, websiteId: string) => {
+    return memoryOptimizerService.markWebsiteActive(websiteId)
+  })
+
+  ipcMain.handle('memory-optimizer:remove-website', async (_, websiteId: string) => {
+    return memoryOptimizerService.removeWebsite(websiteId)
+  })
+
+  ipcMain.handle('memory-optimizer:get-current-memory', async () => {
+    return memoryOptimizerService.getCurrentMemoryUsage()
+  })
+
+  ipcMain.handle('memory-optimizer:set-threshold', async (_, mb: number) => {
+    return memoryOptimizerService.setMemoryThreshold(mb)
   })
 
   // ===== 数据同步 =====

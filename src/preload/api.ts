@@ -233,7 +233,13 @@ export const api = {
       start: () => ipcRenderer.invoke('memory-optimizer:start'),
       stop: () => ipcRenderer.invoke('memory-optimizer:stop'),
       cleanInactive: () => ipcRenderer.invoke('memory-optimizer:clean-inactive'),
-      getStats: () => ipcRenderer.invoke('memory-optimizer:get-stats')
+      getStats: () => ipcRenderer.invoke('memory-optimizer:get-stats'),
+      markActive: (websiteId: string) =>
+        ipcRenderer.invoke('memory-optimizer:mark-active', websiteId),
+      removeWebsite: (websiteId: string) =>
+        ipcRenderer.invoke('memory-optimizer:remove-website', websiteId),
+      getCurrentMemory: () => ipcRenderer.invoke('memory-optimizer:get-current-memory'),
+      setThreshold: (mb: number) => ipcRenderer.invoke('memory-optimizer:set-threshold', mb)
     },
 
     // 数据同步

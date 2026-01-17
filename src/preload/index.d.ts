@@ -441,12 +441,26 @@ declare global {
         memoryOptimizer: {
           start: () => Promise<void>
           stop: () => Promise<void>
-          cleanInactive: () => Promise<number>
+          cleanInactive: () => Promise<string[]>
           getStats: () => Promise<{
-            totalCleaned: number
-            lastCleanTime: number | null
-            isRunning: boolean
+            activeCount: number
+            inactiveCount: number
+            totalCount: number
+            optimizationEnabled: boolean
+            inactiveThreshold: number
+            cleanupInterval: number
+            gcInterval: number
+            memoryMonitorInterval: number
+            memoryThreshold: number
+            currentMemoryUsage?: { workingSetSize: number; privateBytes: number }
           }>
+          markActive: (websiteId: string) => Promise<void>
+          removeWebsite: (websiteId: string) => Promise<void>
+          getCurrentMemory: () => Promise<{
+            workingSetSize: number
+            privateBytes: number
+          } | null>
+          setThreshold: (mb: number) => Promise<void>
         }
         // 数据同步
         dataSync: {

@@ -63,6 +63,10 @@ app.whenReady().then(async () => {
     windowManager.setMainWindow(mainWindow)
     shortcutService.setMainWindow(mainWindow)
 
+    // 设置内存优化器的主窗口引用
+    const { memoryOptimizerService } = await import('./services')
+    memoryOptimizerService.setMainWindow(mainWindow)
+
     // 获取用户保存的快捷键配置，如果没有则使用默认配置
     const storeService = await getStoreService()
     const savedShortcuts = await storeService.getShortcuts()
@@ -124,8 +128,32 @@ app.whenReady().then(async () => {
         }
       }, 5000)
     }
+
+    // 初始化内存优化服务
+    if (settings.memoryOptimizerEnabled) {
+      try {
+        const { memoryOptimizerService } = await import('./services')
+
+        // 应用用户配置
+        if (settings.memoryCleanInterval && settings.memoryCleanInterval >= 1) {
+          memoryOptimizerService.setCleanupInterval(settings.memoryCleanInterval)
+        }
+        if (settings.maxInactiveTime && settings.maxInactiveTime >= 10) {
+          memoryOptimizerService.setInactiveThreshold(settings.maxInactiveTime)
+        }
+
+        // 启动内存优化
+        memoryOptimizerService.enable()
+        console.log('Memory optimizer service started with config:', {
+          cleanupInterval: settings.memoryCleanInterval || 5,
+          inactiveThreshold: settings.maxInactiveTime || 10
+        })
+      } catch (error) {
+        console.error('Failed to initialize memory optimizer:', error)
+      }
+    }
   } catch (error) {
-    console.error('Failed to initialize auto update check:', error)
+    console.error('Failed to initialize auto update check or memory optimizer:', error)
   }
 
   app.on('activate', async function () {
@@ -147,6 +175,15 @@ app.on('will-quit', () => {
   globalProxyService.destroy()
   // 清理所有快捷键
   shortcutService.unregisterAll()
+
+  // 清理内存优化服务
+  try {
+    void import('./services').then(({ memoryOptimizerService }) => {
+      memoryOptimizerService.cleanup()
+    })
+  } catch (error) {
+    console.error('Failed to cleanup memory optimizer:', error)
+  }
 })
 
 // 应用退出时清理资源
