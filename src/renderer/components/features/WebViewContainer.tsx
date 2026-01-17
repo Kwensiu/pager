@@ -15,12 +15,6 @@ interface WebViewElement extends HTMLWebViewElement {
   getWebContents?: () => unknown
 }
 
-// 定义 Electron WebView 事件类型
-interface WebViewNavigateEvent extends Event {
-  url: string
-  isMainFrame?: boolean
-}
-
 // 扩展 HTMLWebViewElement 接口以包含 Electron 特定属性
 declare global {
   interface HTMLWebViewElement {
@@ -31,6 +25,7 @@ declare global {
 
 interface WebViewContainerProps {
   url: string
+  websiteId?: string
   isLoading: boolean
   onRefresh?: () => void
   onGoBack?: () => void
@@ -47,6 +42,7 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
   (
     {
       url,
+      websiteId,
       isLoading,
       onRefresh,
       onGoBack,
@@ -207,19 +203,14 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
     // 应用指纹伪装到 webview
     const applyFingerprint = useCallback(async (): Promise<void> => {
       if (!fingerprintEnabled) {
-        console.log('指纹伪装未启用，跳过应用')
         return
       }
 
       try {
-        console.log('应用指纹伪装，模式:', fingerprintMode)
-
         // 生成指纹
         const fingerprintResult = await window.api.enhanced.fingerprint.generate({
           mode: fingerprintMode
         })
-
-        console.log('指纹生成成功:', fingerprintResult)
 
         // 应用指纹到网站
         // 注意：这里需要获取 webContents，但 webview API 不直接暴露
@@ -319,10 +310,8 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
                   return result;
                 };
               } catch (e) {
-                console.log('时区修改失败:', e);
+                // 时区修改失败，忽略
               }
-              
-              console.log('指纹伪装已应用，模式: ${fingerprintMode}');
             } catch (error) {
               console.error('指纹伪装脚本执行失败:', error);
             }
@@ -330,7 +319,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
         `
 
         await webview.executeJavaScript(fingerprintScript)
-        console.log('指纹伪装脚本注入成功')
       } catch (error) {
         console.error('应用指纹伪装失败:', error)
       }
@@ -341,8 +329,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
       if (!webview) return
 
       const handleDomReady = (): void => {
-        console.log('Webview DOM ready:', url)
-
         // 应用指纹伪装
         applyFingerprint()
 
@@ -350,7 +336,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
         try {
           // 右键菜单现在通过主进程的 did-attach-webview 事件处理
           // 不需要在渲染进程中设置监听器
-          console.log('WebView context menu will be handled by main process')
         } catch (error) {
           console.error('设置webview右键菜单监听器失败:', error)
         }
@@ -383,7 +368,9 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
             })();
           `
             )
-            .catch((err) => console.log('注入鼠标侧键脚本失败:', err))
+            .catch(() => {
+              // 忽略注入失败
+            })
         } catch (error) {
           console.error('注入鼠标侧键脚本时出错:', error)
         }
@@ -498,7 +485,9 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
             })();
           `
             )
-            .catch((err) => console.log('注入滚动条样式失败:', err))
+            .catch(() => {
+              // 忽略注入失败
+            })
         } catch (error) {
           console.error('注入滚动条样式时出错:', error)
         }
@@ -523,7 +512,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
           webview
             .executeJavaScript('true')
             .then(() => {
-              console.log('指纹设置变化，重新应用指纹伪装')
               applyFingerprint()
             })
             .catch(() => {
@@ -540,7 +528,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
       setTimeout(checkAndApplyFingerprint, 100)
     }, [fingerprintEnabled, fingerprintMode, applyFingerprint])
 
-    // 仅保存 webview 引用
     const webviewCallbackRef = useCallback(
       (element: WebViewElement | null) => {
         if (element) {
@@ -548,32 +535,68 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
 
           // 添加导航事件监听器
           const handleDidNavigate = (event: Event): void => {
-            const navigateEvent = event as WebViewNavigateEvent
+            const navigateEvent = event as unknown as { url: string }
             if (navigateEvent.url && navigateEvent.url !== currentUrl) {
               setCurrentUrl(navigateEvent.url)
+
+              // 保存会话信息
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              if (websiteId && (window.api as any).session) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ;(window.api as any).session
+                  .addOrUpdate(websiteId, navigateEvent.url, '')
+                  .catch((error) => console.error('Failed to save session:', error))
+              }
+
+              if (onNavigate) {
+                onNavigate(navigateEvent.url)
+              }
             }
           }
 
           const handleDidNavigateInPage = (event: Event): void => {
-            const navigateEvent = event as WebViewNavigateEvent
+            const navigateEvent = event as unknown as { url: string }
             if (navigateEvent.url && navigateEvent.url !== currentUrl) {
               setCurrentUrl(navigateEvent.url)
+
+              // 保存会话信息
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              if (websiteId && (window.api as any).session) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ;(window.api as any).session
+                  .addOrUpdate(websiteId, navigateEvent.url, '')
+                  .catch((error) => console.error('Failed to save session:', error))
+              }
+            }
+          }
+
+          // 监听页面标题更新
+          const handlePageTitleUpdated = (event: Event): void => {
+            const titleEvent = event as unknown as { title: string }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (titleEvent.title && websiteId && (window.api as any).session) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ;(window.api as any).session
+                .addOrUpdate(websiteId, currentUrl, titleEvent.title)
+                .catch((error) => console.error('Failed to update session title:', error))
             }
           }
 
           // 监听页面导航事件
           element.addEventListener('did-navigate', handleDidNavigate)
           element.addEventListener('did-navigate-in-page', handleDidNavigateInPage)
+          element.addEventListener('page-title-updated', handlePageTitleUpdated)
 
           // 清理函数
           return () => {
             element.removeEventListener('did-navigate', handleDidNavigate)
             element.removeEventListener('did-navigate-in-page', handleDidNavigateInPage)
+            element.removeEventListener('page-title-updated', handlePageTitleUpdated)
           }
         }
         return undefined
       },
-      [currentUrl]
+      [currentUrl, onNavigate, websiteId]
     )
 
     // 处理后退 - 直接使用 webview API

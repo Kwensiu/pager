@@ -28,9 +28,10 @@ if (process.contextIsolated) {
         loadExtensionUrl: (url: string) => ipcRenderer.invoke('window:load-extension-url', url)
       }
     })
+
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
-    console.error(error)
+    console.error('Error exposing preload APIs:', error)
   }
 } else {
   // @ts-ignore (define in dts)
@@ -55,12 +56,10 @@ if (process.contextIsolated) {
         )
     },
     window: {
-      loadExtensionUrl: (url: string) => ipcRenderer.invoke('window:load-extension-url', url),
-      crash: {
-        simulateCrash: () => ipcRenderer.invoke('crash:simulate')
-      }
+      loadExtensionUrl: (url: string) => ipcRenderer.invoke('window:load-extension-url', url)
     }
   }
   // @ts-ignore (define in dts)
   window.api = api
+  ipcRenderer.invoke('crash:simulate')
 }

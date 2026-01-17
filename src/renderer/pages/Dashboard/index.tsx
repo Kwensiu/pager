@@ -13,6 +13,31 @@ function Dashboard({ currentWebsite }: DashboardProps): React.ReactElement {
   const { t } = useI18n()
   const [isLoading, setIsLoading] = useState(false)
   const [showExtensionManager, setShowExtensionManager] = useState(false)
+  const [sessionUrlOverrides, setSessionUrlOverrides] = useState<Record<string, string>>({})
+
+  // 会话恢复功能
+  const restoreSessions = useCallback(async (): Promise<void> => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sessionAPI = (window.api as any).session
+
+      if (sessionAPI && sessionAPI.getAll) {
+        const sessions = await sessionAPI.getAll()
+
+        // 创建websiteId到URL的映射
+        const overrides: Record<string, string> = {}
+        sessions.forEach((session: { websiteId?: string; url?: string }) => {
+          if (session.websiteId && session.url) {
+            overrides[session.websiteId] = session.url
+          }
+        })
+
+        setSessionUrlOverrides(overrides)
+      }
+    } catch (error) {
+      console.error('恢复会话失败:', error)
+    }
+  }, [])
 
   // 使用 reducer 管理 openedWebsites 状态
   const openedWebsitesReducer = (
@@ -41,6 +66,27 @@ function Dashboard({ currentWebsite }: DashboardProps): React.ReactElement {
       dispatch({ type: 'ADD_IF_NOT_EXISTS', payload: { website: currentWebsite } })
     }
   }, [currentWebsite])
+
+  // 应用启动时恢复会话（只执行一次）
+  useEffect(() => {
+    let mounted = true
+
+    const restore = async (): Promise<void> => {
+      try {
+        await restoreSessions()
+      } catch (error) {
+        if (mounted) {
+          console.error('应用启动时恢复会话失败:', error)
+        }
+      }
+    }
+
+    restore()
+
+    return () => {
+      mounted = false
+    }
+  }, [restoreSessions])
 
   // 计算网站的指纹设置
   const getWebsiteFingerprintSettings = useCallback(
@@ -88,6 +134,8 @@ function Dashboard({ currentWebsite }: DashboardProps): React.ReactElement {
       {/* 渲染所有打开过的网站，但只显示当前选中的 */}
       {openedWebsites.map((website) => {
         const fingerprintSettings = getWebsiteFingerprintSettings(website)
+        // 使用会话覆盖的URL，如果没有则使用默认URL
+        const actualUrl = sessionUrlOverrides[website.id] || website.url
 
         return (
           <div
@@ -96,12 +144,13 @@ function Dashboard({ currentWebsite }: DashboardProps): React.ReactElement {
             style={{ display: currentWebsite?.url === website.url ? 'block' : 'none' }}
           >
             <WebViewContainer
-              url={website.url}
+              url={actualUrl}
+              websiteId={website.id}
               isLoading={isLoading}
               onRefresh={handleRefresh}
               onGoBack={handleGoBack}
               onGoForward={handleGoForward}
-              onOpenExternal={() => handleOpenExternal(website.url)}
+              onOpenExternal={() => handleOpenExternal(actualUrl)}
               onExtensionClick={handleExtensionClick}
               // 传递指纹设置
               fingerprintEnabled={fingerprintSettings.fingerprintEnabled}

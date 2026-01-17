@@ -538,8 +538,24 @@ declare global {
         sessionIsolation: {
           create: (websiteId: string) => Promise<string>
           clear: (websiteId: string) => Promise<boolean>
-          exportCookies: (websiteId: string) => Promise<unknown[]>
-          importCookies: (websiteId: string, cookies: unknown[]) => Promise<number>
+          exportCookies: (websiteId: string) => Promise<Electron.Cookie[]>
+          importCookies: (websiteId: string, cookies: Electron.Cookie[]) => Promise<number>
+        }
+
+        // 会话管理
+        session: {
+          addOrUpdate: (websiteId: string, url: string, title: string) => Promise<void>
+          remove: (websiteId: string) => Promise<void>
+          getAll: () => Promise<
+            Array<{ url: string; title: string; timestamp: number; websiteId?: string }>
+          >
+          get: (
+            websiteId: string
+          ) => Promise<
+            { url: string; title: string; timestamp: number; websiteId?: string } | undefined
+          >
+          clearAll: () => Promise<void>
+          getStats: () => Promise<{ totalSessions: number; lastSaved: number }>
         }
         // 进程崩溃处理
         crashHandler: {
@@ -560,6 +576,13 @@ declare global {
       crash: {
         simulateCrash: () => Promise<void>
       }
+    }
+  }
+
+  declare global {
+    interface Window {
+      electron: ElectronAPI
+      api: API
     }
   }
 }

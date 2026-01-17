@@ -18,6 +18,17 @@ export const api = {
     invoke: (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args)
   },
 
+  // 会话管理 - 直接添加到主 API 对象
+  session: {
+    addOrUpdate: (websiteId: string, url: string, title: string) =>
+      ipcRenderer.invoke('session:add-update', websiteId, url, title),
+    remove: (websiteId: string) => ipcRenderer.invoke('session:remove', websiteId),
+    getAll: () => ipcRenderer.invoke('session:get-all'),
+    get: (websiteId: string) => ipcRenderer.invoke('session:get', websiteId),
+    clearAll: () => ipcRenderer.invoke('session:clear-all'),
+    getStats: () => ipcRenderer.invoke('session:get-stats')
+  },
+
   // Shell 相关 API
   shell: {
     openPath: (path: string) => ipcRenderer.invoke('shell:openPath', path)
@@ -320,6 +331,17 @@ export const api = {
         ipcRenderer.invoke('session-isolation:export-cookies', websiteId),
       importCookies: (websiteId: string, cookies: unknown[]) =>
         ipcRenderer.invoke('session-isolation:import-cookies', websiteId, cookies)
+    },
+
+    // 会话管理
+    session: {
+      addOrUpdate: (websiteId: string, url: string, title: string) =>
+        ipcRenderer.invoke('session:add-update', websiteId, url, title),
+      remove: (websiteId: string) => ipcRenderer.invoke('session:remove', websiteId),
+      getAll: () => ipcRenderer.invoke('session:get-all'),
+      get: (websiteId: string) => ipcRenderer.invoke('session:get', websiteId),
+      clearAll: () => ipcRenderer.invoke('session:clear-all'),
+      getStats: () => ipcRenderer.invoke('session:get-stats')
     },
 
     // 进程崩溃处理
