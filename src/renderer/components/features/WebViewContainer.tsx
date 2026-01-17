@@ -91,6 +91,42 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
       setCurrentUrl(url)
     }, [url])
 
+    // 内存优化：标记网站为活跃
+    useEffect(() => {
+      if (!websiteId) return
+
+      // 标记为活跃
+      const markActive = async (): Promise<void> => {
+        try {
+          if (window.api?.enhanced?.memoryOptimizer) {
+            await window.api.enhanced.memoryOptimizer.markActive(websiteId)
+            console.log(`Marked website as active: ${websiteId}`)
+          }
+        } catch (error) {
+          console.error('Failed to mark website as active:', error)
+        }
+      }
+
+      markActive()
+
+      // 监听页面可见性变化
+      const handleVisibilityChange = (): void => {
+        if (!document.hidden) {
+          void markActive()
+        }
+      }
+
+      document.addEventListener('visibilitychange', handleVisibilityChange)
+
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange)
+        // 组件卸载时移除网站记录
+        if (window.api?.enhanced?.memoryOptimizer && websiteId) {
+          void window.api.enhanced.memoryOptimizer.removeWebsite(websiteId)
+        }
+      }
+    }, [websiteId])
+
     // 监听来自主进程的webview操作命令
     useEffect(() => {
       const handleNavigateBack = (): void => {
@@ -524,10 +560,24 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
 
       webview.addEventListener('dom-ready', handleDomReady)
 
+      // 监听用户交互事件以更新活跃状态
+      const handleUserInteraction = (): void => {
+        if (websiteId && window.api?.enhanced?.memoryOptimizer) {
+          void window.api.enhanced.memoryOptimizer.markActive(websiteId)
+        }
+      }
+
+      webview.addEventListener('did-start-loading', handleUserInteraction)
+      webview.addEventListener('did-navigate', handleUserInteraction)
+      webview.addEventListener('did-navigate-in-page', handleUserInteraction)
+
       return () => {
         webview.removeEventListener('dom-ready', handleDomReady)
+        webview.removeEventListener('did-start-loading', handleUserInteraction)
+        webview.removeEventListener('did-navigate', handleUserInteraction)
+        webview.removeEventListener('did-navigate-in-page', handleUserInteraction)
       }
-    }, [url, applyFingerprint])
+    }, [url, applyFingerprint, websiteId])
 
     // 监听指纹设置变化并重新应用指纹
     useEffect(() => {

@@ -81,6 +81,12 @@ export interface Settings {
   memoryOptimizerEnabled?: boolean // 内存优化器
   memoryCleanInterval?: number // 清理间隔
   maxInactiveTime?: number // 最大非活动时间
+  // 内存清理选项
+  enableGarbageCollection?: boolean // 启用垃圾回收
+  enableEmergencyCleanup?: boolean // 启用紧急清理
+  clearInactiveSessionCache?: boolean // 清理不活跃会话缓存
+  clearInactiveCookies?: boolean // 清理不活跃Cookie
+  clearInactiveLocalStorage?: boolean // 清理不活跃本地存储
   autoSyncEnabled?: boolean // 自动同步
   syncInterval?: number // 同步间隔
   proxyEnabled?: boolean // 代理启用

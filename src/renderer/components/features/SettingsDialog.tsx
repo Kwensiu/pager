@@ -6,7 +6,7 @@ import { Separator } from '../../ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Input } from '../../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
-import { Loader2, CheckCircle, XCircle, Globe, Zap, AlertTriangle } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, Globe, Zap, AlertTriangle, Activity } from 'lucide-react'
 import { UpdateDialog } from '../../ui/update-dialog'
 import { useI18n } from '@/core/i18n/useI18n'
 import { useSettings } from '@/hooks/useSettings'
@@ -37,6 +37,43 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const [showExtensionManager, setShowExtensionManager] = useState(false)
   const [showCrashConfirmDialog, setShowCrashConfirmDialog] = useState(false)
   const [showClearCacheSettingsDialog, setShowClearCacheSettingsDialog] = useState(false)
+
+  // 内存统计状态
+  const [memoryStats, setMemoryStats] = useState<{
+    activeCount: number
+    inactiveCount: number
+    currentMemoryUsage?: { workingSetSize: number; privateBytes: number }
+    optimizationEnabled: boolean
+  } | null>(null)
+  const [loadingMemoryStats, setLoadingMemoryStats] = useState(false)
+
+  // 加载内存统计
+  const loadMemoryStats = async (): Promise<void> => {
+    if (!settings.memoryOptimizerEnabled) return
+
+    setLoadingMemoryStats(true)
+    try {
+      const stats = await window.api.enhanced.memoryOptimizer.getStats()
+      console.log('Memory stats loaded:', stats)
+      setMemoryStats(stats)
+    } catch (error) {
+      console.error('Failed to load memory stats:', error)
+    } finally {
+      setLoadingMemoryStats(false)
+    }
+  }
+
+  // 监听内存优化开关变化
+  useEffect(() => {
+    if (settings.memoryOptimizerEnabled && activeTab === 'performance') {
+      loadMemoryStats()
+      // 每30秒刷新一次统计
+      const interval = setInterval(loadMemoryStats, 30000)
+      return () => clearInterval(interval)
+    }
+    return undefined
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.memoryOptimizerEnabled, activeTab])
 
   // 处理清理选项设置变更
   const handleClearCacheOptionChange = (
@@ -335,6 +372,11 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       memoryOptimizerEnabled: false,
       memoryCleanInterval: 60,
       maxInactiveTime: 30,
+      enableGarbageCollection: true,
+      enableEmergencyCleanup: true,
+      clearInactiveSessionCache: false,
+      clearInactiveCookies: false,
+      clearInactiveLocalStorage: false,
       autoSyncEnabled: false,
       syncInterval: 24,
       isAutoLaunch: false,
@@ -956,6 +998,16 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 </div>
               </div>
             )}
+
+            <Separator />
+
+            {/* 快捷键设置 */}
+            <ShortcutSettings
+              shortcutsEnabled={settings.shortcutsEnabled || false}
+              onShortcutsEnabledChange={(enabled) =>
+                handleSettingChange('shortcutsEnabled', enabled)
+              }
+            />
           </div>
         </TabsContent>
 
@@ -977,43 +1029,185 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             {settings.memoryOptimizerEnabled && (
               <div className="pl-4 space-y-4">
-                <div className="space-y-2">
-                  <Label>清理间隔（分钟）</Label>
-                  <Input
-                    type="number"
-                    value={settings.memoryCleanInterval}
-                    onChange={(e) =>
-                      handleSettingChange('memoryCleanInterval', parseInt(e.target.value) || 30)
-                    }
-                    min={5}
-                    max={240}
-                  />
+                {/* 内存统计 */}
+                <div className="rounded-lg border bg-muted p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      <Label className="text-base font-semibold">内存使用情况</Label>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={loadMemoryStats}
+                      disabled={loadingMemoryStats}
+                    >
+                      {loadingMemoryStats ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <span className="text-sm">刷新</span>
+                      )}
+                    </Button>
+                  </div>
+
+                  {memoryStats && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">活跃网站</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {memoryStats.activeCount}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">不活跃网站</p>
+                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          {memoryStats.inactiveCount}
+                        </p>
+                      </div>
+                      {memoryStats.currentMemoryUsage ? (
+                        <>
+                          <div className="space-y-1 col-span-2">
+                            <p className="text-xs text-muted-foreground">当前内存使用</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                              {Math.round(memoryStats.currentMemoryUsage.workingSetSize / 1024)} MB
+                            </p>
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <p className="text-xs text-muted-foreground">私有内存</p>
+                            <p className="text-lg text-slate-600 dark:text-slate-400">
+                              {Math.round(memoryStats.currentMemoryUsage.privateBytes / 1024)} MB
+                            </p>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="space-y-1 col-span-2">
+                          <p className="text-xs text-muted-foreground">当前内存使用</p>
+                          <p className="text-lg text-slate-600 dark:text-slate-400">暂无数据</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!memoryStats && !loadingMemoryStats && (
+                    <p className="text-sm text-muted-foreground">点击刷新按钮查看内存统计</p>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label>最大不活跃时间（分钟）</Label>
-                  <Input
-                    type="number"
-                    value={settings.maxInactiveTime}
-                    onChange={(e) =>
-                      handleSettingChange('maxInactiveTime', parseInt(e.target.value) || 60)
-                    }
-                    min={10}
-                    max={480}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>清理间隔（分钟）</Label>
+                    <Input
+                      type="number"
+                      value={settings.memoryCleanInterval}
+                      onChange={(e) =>
+                        handleSettingChange('memoryCleanInterval', parseInt(e.target.value) || 30)
+                      }
+                      min={5}
+                      max={240}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>最大不活跃时间（分钟）</Label>
+                    <Input
+                      type="number"
+                      value={settings.maxInactiveTime}
+                      onChange={(e) =>
+                        handleSettingChange('maxInactiveTime', parseInt(e.target.value) || 60)
+                      }
+                      min={10}
+                      max={480}
+                    />
+                  </div>
                 </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold">清理选项</Label>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>启用垃圾回收</Label>
+                      <p className="text-sm text-muted-foreground">
+                        定期触发 V8 垃圾回收以释放内存
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.enableGarbageCollection ?? true}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('enableGarbageCollection', checked)
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>紧急清理</Label>
+                      <p className="text-sm text-muted-foreground">当内存超过阈值时自动清理</p>
+                    </div>
+                    <Switch
+                      checked={settings.enableEmergencyCleanup ?? true}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('enableEmergencyCleanup', checked)
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>清理会话缓存</Label>
+                      <p className="text-sm text-muted-foreground">清理不活跃网站的会话数据</p>
+                    </div>
+                    <Switch
+                      checked={settings.clearInactiveSessionCache ?? false}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('clearInactiveSessionCache', checked)
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>清理 Cookie</Label>
+                      <p className="text-sm text-muted-foreground">清理不活跃网站的 Cookie 数据</p>
+                    </div>
+                    <Switch
+                      checked={settings.clearInactiveCookies ?? false}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('clearInactiveCookies', checked)
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>清理本地存储</Label>
+                      <p className="text-sm text-muted-foreground">清理不活跃网站的 localStorage</p>
+                    </div>
+                    <Switch
+                      checked={settings.clearInactiveLocalStorage ?? false}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('clearInactiveLocalStorage', checked)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <Button
+                  variant="default"
+                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-white"
+                  onClick={async () => {
+                    const cleanedIds = await window.api.enhanced.memoryOptimizer.cleanInactive()
+                    console.log('Cleaned websites:', cleanedIds)
+                  }}
+                >
+                  立即清理不活跃网站
+                </Button>
               </div>
             )}
-
-            <Separator />
-
-            {/* 快捷键设置 */}
-            <ShortcutSettings
-              shortcutsEnabled={settings.shortcutsEnabled || false}
-              onShortcutsEnabledChange={(enabled) =>
-                handleSettingChange('shortcutsEnabled', enabled)
-              }
-            />
           </div>
         </TabsContent>
 
@@ -1036,105 +1230,101 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 />
               </div>
 
-              {settings.proxyEnabled && (
-                <div className="space-y-4">
-                  {/* 软件代理开关 */}
-                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">{t('proxy.softwareOnly')}</Label>
-                      <p className="text-xs text-muted-foreground">
-                        {t('proxy.softwareOnlyDescription')}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings.proxySoftwareOnly ?? true}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('proxySoftwareOnly', checked)
-                      }
-                    />
+              <div className="space-y-4">
+                {/* 软件代理开关 */}
+                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                  <div className="space-y-1">
+                    <Label className="text-sm font-medium">{t('proxy.softwareOnly')}</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t('proxy.softwareOnlyDescription')}
+                    </p>
                   </div>
+                  <Switch
+                    checked={settings.proxySoftwareOnly ?? true}
+                    onCheckedChange={(checked) => handleSettingChange('proxySoftwareOnly', checked)}
+                  />
+                </div>
 
-                  {/* 网页代理设置 - 始终显示 */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Label className="text-sm font-medium">{t('proxy.rules')}</Label>
-                      {settings.proxySoftwareOnly && (
-                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                          {t('proxy.softwareProxyEnabled')}
-                        </span>
+                {/* 网页代理设置 - 始终显示 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label className="text-sm font-medium">{t('proxy.rules')}</Label>
+                    {settings.proxySoftwareOnly && (
+                      <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                        {t('proxy.softwareProxyEnabled')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={settings.proxyRules}
+                      onChange={(e) => handleSettingChange('proxyRules', e.target.value)}
+                      placeholder={t('proxy.rulesPlaceholder')}
+                      className="font-mono flex-1"
+                    />
+                    <Button
+                      onClick={testProxyConnection}
+                      variant="outline"
+                      size="sm"
+                      disabled={isTestingProxy || !settings.proxyRules?.trim()}
+                      className="h-9 px-2"
+                    >
+                      {isTestingProxy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Zap className="h-4 w-4" />
                       )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={settings.proxyRules}
-                        onChange={(e) => handleSettingChange('proxyRules', e.target.value)}
-                        placeholder={t('proxy.rulesPlaceholder')}
-                        className="font-mono flex-1"
-                      />
-                      <Button
-                        onClick={testProxyConnection}
-                        variant="outline"
-                        size="sm"
-                        disabled={isTestingProxy || !settings.proxyRules?.trim()}
-                        className="h-9 px-2"
-                      >
-                        {isTestingProxy ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Zap className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        <strong>{t('proxy.supportedFormats')}</strong>
-                      </p>
-                      <div className="grid gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-1 bg-secondary rounded text-xs">
-                            {t('proxy.http')}
-                          </span>
-                          <code>http=proxy.example.com:8080;https=proxy.example.com:8080</code>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-1 bg-secondary rounded text-xs">
-                            {t('proxy.socks5')}
-                          </span>
-                          <code>socks5://proxy.example.com:1080</code>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-1 bg-secondary rounded text-xs">
-                            {t('proxy.simple')}
-                          </span>
-                          <code>proxy.example.com:8080</code>
-                        </div>
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>{t('proxy.supportedFormats')}</strong>
+                    </p>
+                    <div className="grid gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-secondary rounded text-xs">
+                          {t('proxy.http')}
+                        </span>
+                        <code>http=proxy.example.com:8080;https=proxy.example.com:8080</code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-secondary rounded text-xs">
+                          {t('proxy.socks5')}
+                        </span>
+                        <code>socks5://proxy.example.com:1080</code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-secondary rounded text-xs">
+                          {t('proxy.simple')}
+                        </span>
+                        <code>proxy.example.com:8080</code>
                       </div>
                     </div>
                   </div>
-
-                  {/* 测试结果显示 */}
-                  {proxyTestResult && (
-                    <div className="flex items-center gap-2 text-sm p-3 rounded-md bg-muted/50">
-                      {proxyTestResult.success ? (
-                        <>
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          <span className="text-green-600">
-                            {t('proxy.connectionSuccess')}{' '}
-                            {proxyTestResult.latency && `(${proxyTestResult.latency}ms)`}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="h-4 w-4 text-red-500" />
-                          <span className="text-red-600">
-                            {proxyTestResult.error || t('proxy.connectionFailed')}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
                 </div>
-              )}
+
+                {/* 测试结果显示 */}
+                {proxyTestResult && (
+                  <div className="flex items-center gap-2 text-sm p-3 rounded-md bg-muted/50">
+                    {proxyTestResult.success ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-green-600">
+                          {t('proxy.connectionSuccess')}{' '}
+                          {proxyTestResult.latency && `(${proxyTestResult.latency}ms)`}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        <span className="text-red-600">
+                          {proxyTestResult.error || t('proxy.connectionFailed')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <Separator />
