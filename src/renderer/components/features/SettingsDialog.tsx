@@ -457,10 +457,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
     // 应用设置
     await saveSettings()
-    
+
     // 关闭对话框
     setShowResetToDefaultsDialog(false)
-    
+
     // 自动重启应用
     setTimeout(() => {
       if (window.api?.enhanced?.windowManager?.exitApp) {
@@ -554,9 +554,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       }
 
       // 获取所有需要导出的数据
-      const [settings, primaryGroups] = await Promise.all([
+      const [settings, primaryGroups, shortcuts] = await Promise.all([
         api.store.getSettings(),
-        api.store.getPrimaryGroups()
+        api.store.getPrimaryGroups(),
+        api.enhanced?.shortcut?.getAll?.() || []
       ])
 
       // 构建导出数据
@@ -566,6 +567,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         data: {
           settings,
           websites: primaryGroups,
+          shortcuts, // 快捷键配置
+          // TODO: 添加扩展设置导出 (extensionSettings)
           includeCookies: true
         }
       }
@@ -663,6 +666,22 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       // 导入网站数据
       if (importData.data.websites) {
         await api.store.setPrimaryGroups(importData.data.websites)
+      }
+
+      // 导入快捷键配置
+      if (importData.data.shortcuts && api.enhanced?.shortcut) {
+        try {
+          // 先清除现有快捷键
+          await api.enhanced.shortcut.disableAll()
+
+          // 重新注册快捷键
+          for (const shortcut of importData.data.shortcuts) {
+            await api.enhanced.shortcut.register(shortcut)
+          }
+        } catch (error) {
+          console.error('Failed to import shortcuts:', error)
+          // 不阻止整个导入过程，只记录错误
+        }
       }
 
       alert('设置导入成功')
@@ -1464,8 +1483,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>崩溃后自动重启</Label>
-                <p className="text-sm text-muted-foreground">应用崩溃后自动重启</p>
+                <Label>{t('enhancedFeatures.crashHandler.autoRestart')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('enhancedFeatures.crashHandler.description')}
+                </p>
               </div>
               <Switch
                 checked={settings.autoRestartOnCrash}

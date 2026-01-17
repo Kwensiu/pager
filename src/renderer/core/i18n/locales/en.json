@@ -46,8 +46,8 @@
       "title": "Boot Start"
     },
     "crashHandler": {
-      "autoRestart": "Auto Restart on Crash",
-      "description": "Handle application crashes and error reports",
+      "autoRestart": "Auto Restart on App Crash",
+      "description": "Auto restart on crash, no crash feedback page",
       "enabled": "Enable Crash Reports",
       "sendReports": "Send Crash Reports",
       "title": "Process Crash Handler"

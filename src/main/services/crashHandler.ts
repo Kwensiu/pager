@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { existsSync, writeFileSync, mkdirSync } from 'fs'
-import { app, dialog } from 'electron'
+import { app, dialog, BrowserWindow } from 'electron'
 import { CrashRecoveryWindow } from './crashRecoveryWindow'
 
 /**
@@ -78,7 +78,30 @@ class CrashHandler {
 
     await this.saveCrashReport(crashReport)
     this.notifyCrashListeners(type, error)
-    this.crashRecoveryWindow.show(error, type)
+
+    // 读取设置检查是否自动重启
+    try {
+      const { storeService } = await import('./store')
+      const settings = await storeService.getSettings()
+
+      if (settings.autoRestartOnCrash) {
+        console.log('Auto-restart enabled, restarting application...')
+        // 显示简短的通知后自动重启
+        this.showAutoRestartNotification(error, type)
+
+        setTimeout(() => {
+          app.relaunch()
+          app.exit(0)
+        }, 3000)
+      } else {
+        // 显示恢复窗口让用户选择
+        this.crashRecoveryWindow.show(error, type)
+      }
+    } catch (settingsError) {
+      console.error('Failed to read settings for auto-restart decision:', settingsError)
+      // 如果无法读取设置，默认显示恢复窗口
+      this.crashRecoveryWindow.show(error, type)
+    }
 
     if (this.crashCount >= this.maxCrashCount) {
       this.showFatalCrashDialog()
@@ -111,10 +134,38 @@ class CrashHandler {
       new Error(`Render process crashed: ${details.reason}`)
     )
 
-    this.crashRecoveryWindow.show(
-      new Error(`渲染进程崩溃: ${details.reason}`),
-      'render-process-crashed'
-    )
+    // 读取设置检查是否自动重启
+    try {
+      const { storeService } = await import('./store')
+      const settings = await storeService.getSettings()
+
+      if (settings.autoRestartOnCrash) {
+        console.log('Auto-restart enabled for render process crash, restarting application...')
+        // 显示简短的通知后自动重启
+        this.showAutoRestartNotification(
+          new Error(`渲染进程崩溃: ${details.reason}`),
+          'render-process-crashed'
+        )
+
+        setTimeout(() => {
+          app.relaunch()
+          app.exit(0)
+        }, 3000)
+      } else {
+        // 显示恢复窗口让用户选择
+        this.crashRecoveryWindow.show(
+          new Error(`渲染进程崩溃: ${details.reason}`),
+          'render-process-crashed'
+        )
+      }
+    } catch (settingsError) {
+      console.error('Failed to read settings for auto-restart decision:', settingsError)
+      // 如果无法读取设置，默认显示恢复窗口
+      this.crashRecoveryWindow.show(
+        new Error(`渲染进程崩溃: ${details.reason}`),
+        'render-process-crashed'
+      )
+    }
 
     setTimeout(() => {
       if (!webContents.isDestroyed()) {
@@ -145,7 +196,85 @@ class CrashHandler {
   }
 
   /**
-   * 显示致命崩溃对话框
+   * 显示自动重启通知
+   */
+  private showAutoRestartNotification(_error: Error, _type: string): void {
+    // 创建一个简单的通知窗口
+    const notificationWindow = new BrowserWindow({
+      width: 400,
+      height: 150,
+      show: false,
+      resizable: false,
+      movable: false,
+      minimizable: false,
+      maximizable: false,
+      fullscreenable: false,
+      skipTaskbar: true,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      focusable: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: false
+      }
+    })
+
+    notificationWindow.loadURL(
+      'data:text/html;charset=utf-8,' +
+        encodeURIComponent(`
+        <html>
+          <head>
+            <style>
+              body {
+                margin: 0;
+                padding: 20px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                background: rgba(0, 0, 0, 0.8);
+                color: white;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                text-align: center;
+              }
+              .icon {
+                font-size: 24px;
+                margin-bottom: 10px;
+              }
+              .message {
+                font-size: 14px;
+                margin-bottom: 5px;
+              }
+              .countdown {
+                font-size: 12px;
+                opacity: 0.8;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="icon">🔄</div>
+            <div class="message">应用发生崩溃，正在自动重启...</div>
+            <div class="countdown">3秒后重启</div>
+          </body>
+        </html>
+      `)
+    )
+
+    notificationWindow.show()
+
+    // 3秒后自动关闭通知窗口
+    setTimeout(() => {
+      if (notificationWindow && !notificationWindow.isDestroyed()) {
+        notificationWindow.close()
+      }
+    }, 3000)
+  }
+
+  /**
+   * 显示致命错误对话框
    */
   private showFatalCrashDialog(): void {
     const options = {

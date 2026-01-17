@@ -46,8 +46,8 @@
       "title": "开机自启"
     },
     "crashHandler": {
-      "autoRestart": "崩溃后自动重启",
-      "description": "处理应用崩溃和错误报告",
+      "autoRestart": "应用崩溃后自动重启",
+      "description": "崩溃后自动重启，不显示崩溃反馈页面",
       "enabled": "启用崩溃报告",
       "sendReports": "发送崩溃报告",
       "title": "进程崩溃处理"
