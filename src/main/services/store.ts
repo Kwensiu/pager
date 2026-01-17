@@ -7,6 +7,8 @@ import type {
   WebsiteOrderUpdate,
   Shortcut
 } from '../../shared/types/store'
+import fs from 'fs/promises'
+import fsSync from 'fs'
 
 // 定义 Store 数据结构类型
 interface StoreSchema {
@@ -548,10 +550,34 @@ export const storeService = {
 
   // ===== 清除数据相关 =====
 
-  // 清除所有数据（恢复默认）
+  // 清除所有数据（完全清理用户数据目录）
   async clearAll() {
-    const s = await getStore()
-    s.clear()
+    try {
+      const { app } = await import('electron')
+      const userDataPath = app.getPath('userData')
+      
+      console.log(`Starting complete data cleanup for directory: ${userDataPath}`)
+      
+      // 检查目录是否存在
+      if (fsSync.existsSync(userDataPath)) {
+        // 递归删除整个用户数据目录
+        await fs.rm(userDataPath, { recursive: true, force: true })
+        console.log(`Successfully removed user data directory: ${userDataPath}`)
+        
+        // 重新创建空目录，确保应用能正常启动
+        await fs.mkdir(userDataPath, { recursive: true })
+        console.log(`Recreated empty user data directory: ${userDataPath}`)
+      } else {
+        console.log(`User data directory does not exist: ${userDataPath}`)
+      }
+      
+      // 重新初始化 store 以确保后续操作正常
+      store = null
+      
+    } catch (error) {
+      console.error('Failed to clear all data:', error)
+      throw error
+    }
   },
 
   // 重置为默认数据

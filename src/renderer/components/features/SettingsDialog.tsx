@@ -11,6 +11,7 @@ import { UpdateDialog } from '../../ui/update-dialog'
 import { useI18n } from '@/core/i18n/useI18n'
 import { useSettings } from '@/hooks/useSettings'
 import { ExtensionIsolationLevel, ExtensionRiskLevel } from '../../../shared/types/store'
+import { getDefaultGroups } from '@/utils/defaultGroupsHelper'
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const [showCrashConfirmDialog, setShowCrashConfirmDialog] = useState(false)
   const [showClearCacheSettingsDialog, setShowClearCacheSettingsDialog] = useState(false)
   const [showClearDataConfirmDialog, setShowClearDataConfirmDialog] = useState(false)
+  const [showResetToDefaultsDialog, setShowResetToDefaultsDialog] = useState(false)
 
   // 内存统计状态
   const [memoryStats, setMemoryStats] = useState<{
@@ -171,7 +173,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     try {
       if (window.api?.store?.clearAll) {
         await window.api.store.clearAll()
-        alert('所有数据已清除，应用即将关闭')
+        alert(t('settings.clearAllDataSuccess'))
         setShowClearDataConfirmDialog(false)
 
         // 延迟关闭应用，让用户看到成功提示
@@ -377,7 +379,14 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     }
   }
 
-  const handleResetToDefaults = async (): Promise<void> => {
+  // 显示恢复默认设置确认对话框
+  const handleResetToDefaults = (): void => {
+    setShowResetToDefaultsDialog(true)
+  }
+
+  // 实际执行恢复默认设置
+  const executeResetToDefaults = async (): Promise<void> => {
+    // 重置设置
     updateSettings({
       theme: 'light',
       language: 'zh',
@@ -435,8 +444,29 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       },
       showDebugOptions: false
     })
-    // 自动应用设置
+
+    // 恢复默认网站分组
+    try {
+      const defaultGroups = getDefaultGroups()
+      if (window.api?.store?.setPrimaryGroups) {
+        await window.api.store.setPrimaryGroups(defaultGroups)
+      }
+    } catch (error) {
+      console.error('Failed to restore default groups:', error)
+    }
+
+    // 应用设置
     await saveSettings()
+    
+    // 关闭对话框
+    setShowResetToDefaultsDialog(false)
+    
+    // 自动重启应用
+    setTimeout(() => {
+      if (window.api?.enhanced?.windowManager?.exitApp) {
+        window.api.enhanced.windowManager.exitApp()
+      }
+    }, 1000)
   }
 
   const handleManualUpdateCheck = async (): Promise<void> => {
@@ -1579,25 +1609,55 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-red-600">
               <AlertTriangle className="h-5 w-5" />
-              确认清除所有数据
+              {t('settings.clearAllDataTitle')}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2">
                 <div>
-                  <strong>警告：</strong>此操作将清除所有应用数据，包括设置、网站、会话等。
+                  <strong>{t('settings.clearAllDataWarning')}</strong>
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  此操作不可恢复，请确保您已备份重要数据。您确定要继续吗？
+                  {t('settings.clearAllDataDescription')}
                 </div>
               </div>
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setShowClearDataConfirmDialog(false)}>
-              取消
+              {t('settings.clearAllDataCancel')}
             </Button>
             <Button variant="destructive" onClick={handleClearData}>
-              确认清除
+              {t('settings.clearAllDataConfirm')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 恢复默认设置确认对话框 */}
+      <Dialog open={showResetToDefaultsDialog} onOpenChange={setShowResetToDefaultsDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              {t('settings.resetToDefaultsTitle')}
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2">
+                <div>
+                  <strong>{t('settings.resetToDefaultsWarning')}</strong>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {t('settings.resetToDefaultsDescription')}
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowResetToDefaultsDialog(false)}>
+              {t('settings.resetToDefaultsCancel')}
+            </Button>
+            <Button variant="destructive" onClick={executeResetToDefaults}>
+              {t('settings.resetToDefaultsConfirm')}
             </Button>
           </div>
         </DialogContent>
