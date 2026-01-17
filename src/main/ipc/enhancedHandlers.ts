@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron'
 import fs from 'fs/promises'
 import { fingerprintService } from '../services/fingerprint'
-import { windowAdsorptionService } from '../services/windowAdsorption'
 import { memoryOptimizerService } from '../services/memoryOptimizer'
 import { dataSyncService } from '../services/dataSync'
 import { autoLaunchService } from '../services/autoLaunch'
@@ -87,24 +86,6 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
   })
 
   ipcMain.handle('tray:set-context-menu', async () => {
-    // 这个方法不存在，暂时返回空
-    return { success: false, message: '方法未实现' }
-  })
-
-  // ===== 窗口边缘吸附 =====
-  ipcMain.handle('window-adsorption:enable', async () => {
-    return windowAdsorptionService.enable()
-  })
-
-  ipcMain.handle('window-adsorption:disable', async () => {
-    return windowAdsorptionService.disable()
-  })
-
-  ipcMain.handle('window-adsorption:is-enabled', async () => {
-    return windowAdsorptionService.isEnabled()
-  })
-
-  ipcMain.handle('window-adsorption:set-sensitivity', async () => {
     // 这个方法不存在，暂时返回空
     return { success: false, message: '方法未实现' }
   })
@@ -416,7 +397,6 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
 
   ipcMain.handle('enhanced:enable-all', async () => {
     return {
-      windowAdsorption: windowAdsorptionService.enable(),
       memoryOptimizer: memoryOptimizerService.startCleanup(),
       autoLaunch: autoLaunchService.enable()
     }
@@ -424,7 +404,6 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
 
   ipcMain.handle('enhanced:disable-all', async () => {
     return {
-      windowAdsorption: windowAdsorptionService.disable(),
       memoryOptimizer: memoryOptimizerService.stopCleanup(),
       autoLaunch: autoLaunchService.disable()
     }

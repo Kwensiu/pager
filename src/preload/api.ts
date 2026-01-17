@@ -220,15 +220,6 @@ export const api = {
         ipcRenderer.invoke('tray:set-context-menu', menuItems)
     },
 
-    // 窗口边缘吸附
-    windowAdsorption: {
-      enable: () => ipcRenderer.invoke('window-adsorption:enable'),
-      disable: () => ipcRenderer.invoke('window-adsorption:disable'),
-      isEnabled: () => ipcRenderer.invoke('window-adsorption:is-enabled'),
-      setSensitivity: (sensitivity: number) =>
-        ipcRenderer.invoke('window-adsorption:set-sensitivity', sensitivity)
-    },
-
     // 内存优化
     memoryOptimizer: {
       start: () => ipcRenderer.invoke('memory-optimizer:start'),

@@ -1,5 +1,4 @@
 export { fingerprintService } from './fingerprint'
-export { windowAdsorptionService } from './windowAdsorption'
 export { memoryOptimizerService } from './memoryOptimizer'
 export { dataSyncService } from './dataSync'
 export { autoLaunchService } from './autoLaunch'

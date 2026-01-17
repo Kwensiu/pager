@@ -6,7 +6,6 @@ import { Separator } from '../../ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Input } from '../../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
-import { Slider } from '../../ui/slider'
 import { Loader2, CheckCircle, XCircle, Globe, Zap, AlertTriangle } from 'lucide-react'
 import { UpdateDialog } from '../../ui/update-dialog'
 import { useI18n } from '@/core/i18n/useI18n'
@@ -275,20 +274,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         }
       }
 
-      // 应用窗口边缘吸附
-      if (api.enhanced.windowAdsorption) {
-        if (settings.windowAdsorptionEnabled) {
-          await api.enhanced.windowAdsorption.enable()
-          if (api.enhanced.windowAdsorption.setSensitivity) {
-            await api.enhanced.windowAdsorption.setSensitivity(
-              settings.windowAdsorptionSensitivity || 50
-            )
-          }
-        } else {
-          await api.enhanced.windowAdsorption.disable()
-        }
-      }
-
       console.log('Settings applied successfully')
     } catch (error) {
       console.error('Failed to apply settings:', error)
@@ -308,7 +293,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     const settingsRequiringDelay = [
       'windowAlwaysOnTop',
       'windowMiniMode',
-      'windowAdsorptionEnabled',
       'memoryOptimizerEnabled',
       'isAutoLaunch'
     ]
@@ -347,8 +331,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       trayShowNotifications: true,
       windowAlwaysOnTop: false,
       windowMiniMode: false,
-      windowAdsorptionEnabled: false,
-      windowAdsorptionSensitivity: 50,
       memoryOptimizerEnabled: false,
       memoryCleanInterval: 60,
       maxInactiveTime: 30,
@@ -939,40 +921,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                 onCheckedChange={(checked) => handleSettingChange('windowMiniMode', checked)}
               />
             </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.windowAdsorptionEnabled')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.windowAdsorptionEnabledDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.windowAdsorptionEnabled}
-                onCheckedChange={(checked) =>
-                  handleSettingChange('windowAdsorptionEnabled', checked)
-                }
-              />
-            </div>
-
-            {settings.windowAdsorptionEnabled && (
-              <div className="pl-4 space-y-2">
-                <Label>{t('settings.windowAdsorptionSensitivity')}</Label>
-                <div className="flex items-center space-x-4">
-                  <Slider
-                    value={[settings.windowAdsorptionSensitivity || 50]}
-                    onValueChange={([value]) =>
-                      handleSettingChange('windowAdsorptionSensitivity', value)
-                    }
-                    min={1}
-                    max={100}
-                    step={1}
-                    className="flex-1"
-                  />
-                  <span className="w-12 text-sm">{settings.windowAdsorptionSensitivity || 50}</span>
-                </div>
-              </div>
-            )}
 
             <Separator />
 

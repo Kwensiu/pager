@@ -145,12 +145,6 @@
       "modeBasic": "Basic Mode",
       "title": "Website Fingerprint Spoofing"
     },
-    "windowAdsorption": {
-      "description": "Window automatically snaps to screen edges when close",
-      "enabled": "Enable Window Adsorption",
-      "sensitivity": "Adsorption Sensitivity",
-      "title": "Window Edge Adsorption"
-    },
     "windowManager": {
       "alwaysOnTop": "Always on Top",
       "description": "Window always on top, mini mode, etc.",
@@ -392,9 +386,6 @@
     "windowAlwaysOnTopDescription": "Window always displays at the front",
     "windowMiniMode": "Mini Mode",
     "windowMiniModeDescription": "Enable mini mode",
-    "windowAdsorptionEnabled": "Window Edge Adsorption",
-    "windowAdsorptionEnabledDescription": "Window automatically adsorbs when near screen edge",
-    "windowAdsorptionSensitivity": "Adsorption Sensitivity",
     "trayEnabled": "System Tray",
     "trayEnabledDescription": "Show application icon in system tray",
     "trayShowNotifications": "Show Notifications",

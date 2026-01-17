@@ -7,7 +7,6 @@ const defaultSettings: Settings = {
   showDebugOptions: false,
   isAutoLaunch: false,
   isMenuVisible: true,
-  isWindowEdgeAdsorption: true,
   isMemoryOptimizationEnabled: true,
   isOpenDevTools: false,
   isOpenZoom: true,

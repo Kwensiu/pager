@@ -145,12 +145,6 @@
       "modeBasic": "基础模式",
       "title": "网站指纹伪装"
     },
-    "windowAdsorption": {
-      "description": "窗口靠近屏幕边缘时自动吸附",
-      "enabled": "启用窗口吸附",
-      "sensitivity": "吸附灵敏度",
-      "title": "窗口边缘吸附"
-    },
     "windowManager": {
       "alwaysOnTop": "窗口置顶",
       "description": "窗口置顶、小窗模式等",
@@ -392,9 +386,6 @@
     "windowAlwaysOnTopDescription": "窗口始终显示在最前面",
     "windowMiniMode": "小窗模式",
     "windowMiniModeDescription": "启用小窗模式",
-    "windowAdsorptionEnabled": "窗口边缘吸附",
-    "windowAdsorptionEnabledDescription": "窗口靠近屏幕边缘时自动吸附",
-    "windowAdsorptionSensitivity": "吸附灵敏度",
     "trayEnabled": "系统托盘",
     "trayEnabledDescription": "在系统托盘显示应用图标",
     "trayShowNotifications": "显示通知",

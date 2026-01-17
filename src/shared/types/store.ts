@@ -61,7 +61,6 @@ export interface Settings {
   // 新增字段 - tuboshu 功能
   isAutoLaunch?: boolean // 开机自启动
   isMenuVisible?: boolean // 侧边栏可见性
-  isWindowEdgeAdsorption?: boolean // 窗口边缘吸附
   isMemoryOptimizationEnabled?: boolean // 内存优化
   isOpenDevTools?: boolean // 开发者工具
   isOpenZoom?: boolean // 缩放功能
@@ -79,8 +78,6 @@ export interface Settings {
   trayShowNotifications?: boolean // 托盘通知
   windowAlwaysOnTop?: boolean // 窗口置顶
   windowMiniMode?: boolean // 迷你模式
-  windowAdsorptionEnabled?: boolean // 窗口吸附
-  windowAdsorptionSensitivity?: number // 吸附灵敏度
   memoryOptimizerEnabled?: boolean // 内存优化器
   memoryCleanInterval?: number // 清理间隔
   maxInactiveTime?: number // 最大非活动时间
