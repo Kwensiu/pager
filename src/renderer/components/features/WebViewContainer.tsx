@@ -1,6 +1,8 @@
 import { useRef, useEffect, useMemo, forwardRef, useCallback, useState } from 'react'
 import { NavigationToolbar } from './NavigationToolbar'
 import { useSettings } from '@/hooks/useSettings'
+import { matchesPredefinedShortcut } from '@/utils/keyboardShortcuts'
+import { showSuccessNotification, showErrorNotification } from '@/utils/notifications'
 
 // 定义 Electron WebView 元素的类型
 interface WebViewElement extends HTMLWebViewElement {
@@ -566,15 +568,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
             if (navigateEvent.url && navigateEvent.url !== currentUrl) {
               setCurrentUrl(navigateEvent.url)
 
-              // 保存会话信息
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              if (websiteId && (window.api as any).session) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ;(window.api as any).session
-                  .addOrUpdate(websiteId, navigateEvent.url, '')
-                  .catch((error) => console.error('Failed to save session:', error))
-              }
-
               if (onNavigate) {
                 onNavigate(navigateEvent.url)
               }
@@ -587,10 +580,8 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
               setCurrentUrl(navigateEvent.url)
 
               // 保存会话信息
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              if (websiteId && (window.api as any).session) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                ;(window.api as any).session
+              if (websiteId && window.api?.enhanced?.session) {
+                window.api.enhanced.session
                   .addOrUpdate(websiteId, navigateEvent.url, '')
                   .catch((error) => console.error('Failed to save session:', error))
               }
@@ -600,10 +591,9 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
           // 监听页面标题更新
           const handlePageTitleUpdated = (event: Event): void => {
             const titleEvent = event as unknown as { title: string }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            if (titleEvent.title && websiteId && (window.api as any).session) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              ;(window.api as any).session
+            // 保存会话信息
+            if (titleEvent.title && websiteId && window.api?.enhanced?.session) {
+              window.api.enhanced.session
                 .addOrUpdate(websiteId, currentUrl, titleEvent.title)
                 .catch((error) => console.error('Failed to update session title:', error))
             }
