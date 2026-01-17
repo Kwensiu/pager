@@ -19,8 +19,7 @@ class AutoLaunchService {
 
     try {
       // 检查当前启动设置
-      const settings = app.getLoginItemSettings()
-      console.log('Auto-launch settings:', settings)
+      app.getLoginItemSettings()
       this.isInitialized = true
     } catch (error) {
       console.error('Failed to initialize auto-launch service:', error)

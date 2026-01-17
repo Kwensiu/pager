@@ -37,9 +37,9 @@
   },
   "enhancedFeatures": {
     "autoLaunch": {
-      "description": "Automatically start app on system boot",
-      "enabled": "Enable Auto Launch",
-      "title": "Auto Launch"
+      "description": "Automatically start Pager app on system boot",
+      "enabled": "Enable Boot Start",
+      "title": "Boot Start"
     },
     "crashHandler": {
       "autoRestart": "Auto Restart on Crash",

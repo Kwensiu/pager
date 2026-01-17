@@ -47,7 +47,7 @@ class DataSyncService {
     'maxInactiveTime',
     'autoSyncEnabled',
     'syncInterval',
-    'autoLaunchEnabled',
+    'isAutoLaunch',
     'proxyEnabled',
     'proxyRules',
     'autoCheckUpdates',

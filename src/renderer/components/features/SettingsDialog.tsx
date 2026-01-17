@@ -213,7 +213,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       'windowMiniMode',
       'windowAdsorptionEnabled',
       'memoryOptimizerEnabled',
-      'autoLaunchEnabled'
+      'isAutoLaunch'
     ]
 
     if (settingsRequiringDelay.includes(key)) {
@@ -611,8 +611,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>自动启动</Label>
-                <p className="text-sm text-muted-foreground">开机时自动启动应用</p>
+                <Label>开机自启</Label>
+                <p className="text-sm text-muted-foreground">开机时自动启动Pager软件</p>
               </div>
               <Switch
                 checked={settings.isAutoLaunch}

@@ -37,9 +37,9 @@
   },
   "enhancedFeatures": {
     "autoLaunch": {
-      "description": "开机时自动启动应用",
-      "enabled": "启用自动启动",
-      "title": "自动启动"
+      "description": "开机时自动启动 Pager",
+      "enabled": "启用开机自启",
+      "title": "开机自启"
     },
     "crashHandler": {
       "autoRestart": "崩溃后自动重启",

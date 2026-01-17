@@ -78,7 +78,7 @@ async function getStore(): Promise<ElectronStore> {
           syncInterval: 24,
 
           // 自动启动
-          autoLaunchEnabled: false,
+          isAutoLaunch: false,
 
           // 代理支持
           proxyEnabled: false,
