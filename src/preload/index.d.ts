@@ -556,6 +556,10 @@ declare global {
         enableAll: () => Promise<void>
         disableAll: () => Promise<void>
       }
+      // 崩溃模拟
+      crash: {
+        simulateCrash: () => Promise<void>
+      }
     }
   }
 }

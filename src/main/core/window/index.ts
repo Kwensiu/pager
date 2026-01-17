@@ -206,18 +206,18 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
     try {
       const storeService = await getStoreService()
       const settings = await storeService.getSettings()
-      
+
       // 如果启用最小化到托盘，则隐藏到托盘而不是最小化到任务栏
       if (settings.minimizeToTray) {
         mainWindow.hide()
-        
+
         // 如果托盘服务可用，确保托盘已创建
         const trayService = await getTrayService()
         if (!trayService.getWindowVisibility?.()) {
           // 托盘未创建时创建托盘
           trayService.createTray(mainWindow)
         }
-        
+
         // Window minimized to tray
       }
     } catch (error) {
@@ -230,18 +230,18 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
     try {
       const storeService = await getStoreService()
       const settings = await storeService.getSettings()
-      
+
       // 如果启用最小化到托盘，则隐藏到托盘而不是关闭应用
       if (settings.minimizeToTray) {
         event.preventDefault()
         mainWindow.hide()
-        
+
         // 确保托盘已创建
         const trayService = await getTrayService()
         if (!trayService.getWindowVisibility?.()) {
           trayService.createTray(mainWindow)
         }
-        
+
         // Window hidden to tray on close
       }
     } catch (error) {

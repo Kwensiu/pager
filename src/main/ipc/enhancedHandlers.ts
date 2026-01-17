@@ -1,7 +1,6 @@
 import { ipcMain } from 'electron'
 import fs from 'fs/promises'
 import { fingerprintService } from '../services/fingerprint'
-import { trayService } from '../services/tray'
 import { windowAdsorptionService } from '../services/windowAdsorption'
 import { memoryOptimizerService } from '../services/memoryOptimizer'
 import { dataSyncService } from '../services/dataSync'
@@ -73,14 +72,17 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
 
   // ===== 系统托盘 =====
   ipcMain.handle('tray:create', async () => {
+    const { trayService } = await import('../services/tray')
     trayService.createTray(mainWindow)
   })
 
   ipcMain.handle('tray:destroy', async () => {
+    const { trayService } = await import('../services/tray')
     return trayService.destroyTray()
   })
 
   ipcMain.handle('tray:set-tooltip', async (_, tooltip: string) => {
+    const { trayService } = await import('../services/tray')
     return trayService.setToolTip(tooltip)
   })
 
@@ -361,6 +363,17 @@ export function registerEnhancedIpcHandlers(mainWindow: Electron.BrowserWindow):
 
   ipcMain.handle('crash-handler:send-report', async (_, reportId: string) => {
     return crashHandler.sendCrashReport(reportId)
+  })
+
+  // ===== 进程崩溃处理 =====
+  ipcMain.handle('crash:simulate', async () => {
+    try {
+      const result = await crashHandler.simulateCrash()
+      return result
+    } catch (error) {
+      console.error('模拟崩溃失败:', error)
+      throw error
+    }
   })
 
   // ===== 会话管理 =====

@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs'
 import { Input } from '../../ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select'
 import { Slider } from '../../ui/slider'
-import { Loader2, CheckCircle, XCircle, Globe, Zap } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle, Globe, Zap, AlertTriangle } from 'lucide-react'
 import { UpdateDialog } from '../../ui/update-dialog'
 import { useI18n } from '@/core/i18n/useI18n'
 import { useSettings } from '@/hooks/useSettings'
@@ -35,6 +35,22 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const [activeTab, setActiveTab] = useState('general')
   const { settings, updateSettings } = useSettings()
   const [showExtensionManager, setShowExtensionManager] = useState(false)
+  const [showCrashConfirmDialog, setShowCrashConfirmDialog] = useState(false)
+
+  // 处理崩溃模拟
+  const handleSimulateCrash = async (): Promise<void> => {
+    try {
+      if (window.api?.crash?.simulateCrash) {
+        await window.api.crash.simulateCrash()
+        // 注意：应用会在这里崩溃，所以下面的代码可能不会执行
+      } else {
+        console.error('崩溃模拟API不可用')
+      }
+    } catch (error) {
+      console.error('崩溃模拟失败:', error)
+    }
+  }
+
   const [isCheckingUpdate, setIsCheckingUpdate] = useState(false)
   const [updateInfo, setUpdateInfo] = useState<{
     currentVersion: string
@@ -205,7 +221,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
   const handleSettingChange = async (key: keyof typeof settings, value: unknown): Promise<void> => {
     // 立即更新 UI 状态
-      updateSettings({ [key]: value } as Partial<typeof settings>)
+    updateSettings({ [key]: value } as Partial<typeof settings>)
 
     // 对于某些特殊设置，延迟应用以避免状态冲突
     const settingsRequiringDelay = [
@@ -601,7 +617,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label>最小化到托盘</Label>
-                <p className="text-sm text-muted-foreground">关闭窗口时隐藏到系统托盘，最小化时正常显示在任务栏</p>
+                <p className="text-sm text-muted-foreground">
+                  关闭窗口时隐藏到系统托盘，最小化时正常显示在任务栏
+                </p>
               </div>
               <Switch
                 checked={settings.minimizeToTray}
@@ -1167,6 +1185,15 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
                       >
                         打开开发者工具
                       </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setShowCrashConfirmDialog(true)}
+                        className="relative overflow-hidden"
+                      >
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        模拟崩溃
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1200,6 +1227,36 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         error={updateInfo?.error}
         isChecking={isCheckingUpdate}
       />
+
+      {/* 崩溃确认对话框 */}
+      <Dialog open={showCrashConfirmDialog} onOpenChange={setShowCrashConfirmDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              确认模拟崩溃
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-2">
+                <div>
+                  <strong>警告：</strong>此操作将模拟应用程序崩溃，用于测试崩溃恢复功能。
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  应用程序将立即关闭，所有未保存的数据可能会丢失。您确定要继续吗？
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setShowCrashConfirmDialog(false)}>
+              取消
+            </Button>
+            <Button variant="destructive" onClick={handleSimulateCrash}>
+              确认崩溃
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

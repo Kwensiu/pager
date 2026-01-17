@@ -77,6 +77,11 @@ export const api = {
       ipcRenderer.invoke('window:open-extension-options-in-main', url)
   },
 
+  // 崩溃模拟
+  crash: {
+    simulateCrash: () => ipcRenderer.invoke('crash:simulate')
+  },
+
   // 窗口管理
   window: {
     resize: () => ipcRenderer.send('window:resize'),
@@ -185,7 +190,6 @@ export const api = {
       clearCache: () => ipcRenderer.invoke('fingerprint:clear-cache'),
       getCacheStats: () => ipcRenderer.invoke('fingerprint:get-cache-stats')
     },
-
     // 全局快捷键
     shortcut: {
       register: (shortcut: string, action: string) =>
@@ -259,7 +263,9 @@ export const api = {
         ipcRenderer.invoke('js-injector:inject', websiteId, code),
       remove: (websiteId: string, injectionId: string) =>
         ipcRenderer.invoke('js-injector:remove', websiteId, injectionId),
-      getAll: (websiteId: string) => ipcRenderer.invoke('js-injector:get-all', websiteId)
+      getAll: (websiteId: string) => ipcRenderer.invoke('js-injector:get-all', websiteId),
+      injectCode: (code: string) => ipcRenderer.invoke('js-injector:inject-code', code),
+      executeScript: (script: string) => ipcRenderer.invoke('js-injector:execute-script', script)
     },
 
     // 代理支持

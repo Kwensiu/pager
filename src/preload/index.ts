@@ -55,7 +55,10 @@ if (process.contextIsolated) {
         )
     },
     window: {
-      loadExtensionUrl: (url: string) => ipcRenderer.invoke('window:load-extension-url', url)
+      loadExtensionUrl: (url: string) => ipcRenderer.invoke('window:load-extension-url', url),
+      crash: {
+        simulateCrash: () => ipcRenderer.invoke('crash:simulate')
+      }
     }
   }
   // @ts-ignore (define in dts)

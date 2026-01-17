@@ -1,5 +1,4 @@
 export { fingerprintService } from './fingerprint'
-export { trayService } from './tray'
 export { windowAdsorptionService } from './windowAdsorption'
 export { memoryOptimizerService } from './memoryOptimizer'
 export { dataSyncService } from './dataSync'
@@ -15,6 +14,12 @@ export { sessionIsolationService } from './sessionIsolation'
 export { crashHandler } from './crashHandler'
 export { FaviconService } from './favicon'
 export { sessionManager } from './sessionManager'
+
+// 动态导出以避免循环依赖
+export const getTrayService = async (): Promise<typeof import('./tray').trayService> => {
+  const { trayService } = await import('./tray')
+  return trayService
+}
 
 // 动态导出storeService以避免循环依赖
 export const getStoreService = async (): Promise<typeof import('./store').storeService> => {

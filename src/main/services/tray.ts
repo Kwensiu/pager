@@ -40,7 +40,7 @@ class TrayService {
         this.tray.on('right-click', () => {
           this.tray?.popUpContextMenu()
         })
-        
+
         // Mac 上双击显示窗口
         this.tray.on('double-click', () => {
           this.showWindow()
@@ -50,7 +50,7 @@ class TrayService {
         this.tray.on('click', () => {
           this.toggleWindow()
         })
-        
+
         // 双击直接显示窗口
         this.tray.on('double-click', () => {
           this.showWindow()
