@@ -26,6 +26,12 @@ const defaultSettings: Settings = {
   crashReportingEnabled: true,
   saveSession: true,
   clearCacheOnExit: false,
+  clearCacheOptions: {
+    clearStorageData: false,
+    clearAuthCache: false,
+    clearSessionCache: true,
+    clearDefaultSession: true
+  },
   allowLocalFileAccess: false, // 默认关闭本地文件访问
   // 快速跳转网站设置
   quickResetWebsite: true, // 默认开启快速跳转网站功能

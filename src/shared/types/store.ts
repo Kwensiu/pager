@@ -102,6 +102,13 @@ export interface Settings {
   crashReportingEnabled?: boolean
   saveSession?: boolean
   clearCacheOnExit?: boolean
+  // 清理选项配置
+  clearCacheOptions?: {
+    clearSessionCache?: boolean // 清理会话缓存
+    clearStorageData?: boolean // 清除存储数据
+    clearAuthCache?: boolean // 清除认证缓存
+    clearDefaultSession?: boolean // 清除默认会话
+  }
   // 文件访问设置
   allowLocalFileAccess?: boolean // 允许访问本地文件
   // 快速跳转网站设置

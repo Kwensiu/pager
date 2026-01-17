@@ -149,15 +149,29 @@ app.on('before-quit', async () => {
     // 如果启用了退出时清除缓存，清除所有缓存
     if (settings.clearCacheOnExit) {
       try {
-        // 清除所有会话的缓存
-        await sessionIsolationService.clearAllSessions()
+        const options = settings.clearCacheOptions || {}
 
-        // 清除默认会话缓存
-        const defaultSession = session.defaultSession
-        await defaultSession.clearCache()
-        await defaultSession.clearStorageData()
+        // 清除所有会话的缓存（根据配置）
+        if (
+          options.clearSessionCache !== false ||
+          options.clearStorageData !== false ||
+          options.clearAuthCache !== false
+        ) {
+          await sessionIsolationService.clearAllSessions(options)
+        }
 
-        console.log('Cache cleared on exit')
+        // 清除默认会话缓存（根据配置）
+        if (options.clearDefaultSession !== false) {
+          const defaultSession = session.defaultSession
+          if (options.clearSessionCache !== false) {
+            await defaultSession.clearCache()
+          }
+          if (options.clearStorageData !== false) {
+            await defaultSession.clearStorageData()
+          }
+        }
+
+        console.log('Cache cleared on exit with options:', options)
       } catch (error) {
         console.error('Failed to clear cache on exit:', error)
       }

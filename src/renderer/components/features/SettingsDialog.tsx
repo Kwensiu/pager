@@ -36,6 +36,83 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   const { settings, updateSettings } = useSettings()
   const [showExtensionManager, setShowExtensionManager] = useState(false)
   const [showCrashConfirmDialog, setShowCrashConfirmDialog] = useState(false)
+  const [showClearCacheSettingsDialog, setShowClearCacheSettingsDialog] = useState(false)
+
+  // 处理清理选项设置变更
+  const handleClearCacheOptionChange = (
+    option: keyof NonNullable<typeof settings.clearCacheOptions>,
+    value: boolean
+  ): void => {
+    const currentOptions = settings.clearCacheOptions || {}
+    updateSettings({
+      clearCacheOptions: {
+        ...currentOptions,
+        [option]: value
+      }
+    })
+  }
+
+  // 清理选项配置
+  const clearCacheOptionsConfig: Array<{
+    key: keyof NonNullable<typeof settings.clearCacheOptions>
+    label: string
+    description: string
+    tooltip: string
+    defaultChecked: boolean
+  }> = [
+    {
+      key: 'clearStorageData',
+      label: t('settings.clearStorageData'),
+      description: t('settings.clearStorageDataDescription'),
+      tooltip: t('settings.clearStorageDataTooltip'),
+      defaultChecked: false
+    },
+    {
+      key: 'clearAuthCache',
+      label: t('settings.clearAuthCache'),
+      description: t('settings.clearAuthCacheDescription'),
+      tooltip: t('settings.clearAuthCacheTooltip'),
+      defaultChecked: false
+    },
+    {
+      key: 'clearSessionCache',
+      label: t('settings.clearSessionCache'),
+      description: t('settings.clearSessionCacheDescription'),
+      tooltip: t('settings.clearSessionCacheTooltip'),
+      defaultChecked: true
+    },
+    {
+      key: 'clearDefaultSession',
+      label: t('settings.clearDefaultSession'),
+      description: t('settings.clearDefaultSessionDescription'),
+      tooltip: t('settings.clearDefaultSessionTooltip'),
+      defaultChecked: true
+    }
+  ]
+
+  // 渲染清理设置选项
+  const renderClearCacheOption = (config: (typeof clearCacheOptionsConfig)[0]): JSX.Element => (
+    <div className="flex items-center justify-between">
+      <div className="space-y-0.5">
+        <div className="flex items-center gap-2">
+          <Label>{config.label}</Label>
+          <div className="group relative">
+            <div className="h-4 w-4 rounded-full bg-muted flex items-center justify-center cursor-help">
+              <span className="text-xs text-muted-foreground">?</span>
+            </div>
+            <div className="absolute left-6 top-0 z-50 invisible group-hover:visible bg-popover text-popover-foreground border rounded-md shadow-md p-2 w-64 text-sm">
+              {config.tooltip}
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">{config.description}</p>
+      </div>
+      <Switch
+        checked={settings.clearCacheOptions?.[config.key] ?? config.defaultChecked}
+        onCheckedChange={(checked) => handleClearCacheOptionChange(config.key, checked)}
+      />
+    </div>
+  )
 
   // 处理崩溃模拟
   const handleSimulateCrash = async (): Promise<void> => {
@@ -221,7 +298,11 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
   const handleSettingChange = async (key: keyof typeof settings, value: unknown): Promise<void> => {
     // 立即更新 UI 状态
-    updateSettings({ [key]: value } as Partial<typeof settings>)
+    if (key === 'clearCacheOptions') {
+      updateSettings({ [key]: value } as Partial<typeof settings>)
+    } else {
+      updateSettings({ [key]: value } as Partial<typeof settings>)
+    }
 
     // 对于某些特殊设置，延迟应用以避免状态冲突
     const settingsRequiringDelay = [
@@ -281,6 +362,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       crashReportingEnabled: false,
       saveSession: false,
       clearCacheOnExit: false,
+      clearCacheOptions: {
+        clearStorageData: false,
+        clearAuthCache: false,
+        clearSessionCache: true,
+        clearDefaultSession: true
+      },
       allowLocalFileAccess: false,
       // 快速跳转网站设置
       quickResetWebsite: true,
@@ -525,8 +612,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>主题</Label>
-                <p className="text-sm text-muted-foreground">选择应用主题</p>
+                <Label>{t('settings.theme')}</Label>
+                <p className="text-sm text-muted-foreground">{t('settings.themeDescription')}</p>
               </div>
               <Select
                 value={settings.theme}
@@ -544,8 +631,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>语言</Label>
-                <p className="text-sm text-muted-foreground">选择应用语言</p>
+                <Label>{t('settings.language')}</Label>
+                <p className="text-sm text-muted-foreground">{t('settings.languageDescription')}</p>
               </div>
               <Select
                 value={settings.language}
@@ -563,8 +650,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>侧边栏折叠模式</Label>
-                <p className="text-sm text-muted-foreground">侧边栏折叠时的显示模式</p>
+                <Label>{t('settings.collapsedSidebarMode')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.collapsedSidebarModeDescription')}
+                </p>
               </div>
               <Select
                 value={settings.collapsedSidebarMode}
@@ -587,8 +676,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center justify-between flex-1">
                 <div className="space-y-0.5">
-                  <Label>自动检查更新</Label>
-                  <p className="text-sm text-muted-foreground">启动时自动检查应用更新</p>
+                  <Label>{t('settings.autoCheckUpdates')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.autoCheckUpdatesDescription')}
+                  </p>
                 </div>
                 <Button
                   variant="ghost"
@@ -620,9 +711,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>最小化到托盘</Label>
+                <Label>{t('settings.minimizeToTray')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  关闭窗口时隐藏到系统托盘，最小化时正常显示在任务栏
+                  {t('settings.minimizeToTrayDescription')}
                 </p>
               </div>
               <Switch
@@ -633,8 +724,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>开机自启</Label>
-                <p className="text-sm text-muted-foreground">开机时自动启动Pager软件</p>
+                <Label>{t('settings.isAutoLaunch')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.isAutoLaunchDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.isAutoLaunch}
@@ -646,8 +739,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>快速跳转网站</Label>
-                <p className="text-sm text-muted-foreground">允许左键双击网站按钮时跳转到初始URL</p>
+                <Label>{t('settings.quickResetWebsite')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.quickResetWebsiteDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.quickResetWebsite}
@@ -659,8 +754,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
               <div className="pl-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>提示弹窗</Label>
-                    <p className="text-sm text-muted-foreground">跳转网页时提示确认弹窗</p>
+                    <Label>{t('settings.resetWebsiteConfirmDialog')}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('settings.resetWebsiteConfirmDialogDescription')}
+                    </p>
                   </div>
                   <Switch
                     checked={settings.resetWebsiteConfirmDialog}
@@ -676,8 +773,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>自动关闭设置</Label>
-                <p className="text-sm text-muted-foreground">点击网站时自动关闭设置页面</p>
+                <Label>{t('settings.autoCloseSettingsOnWebsiteClick')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.autoCloseSettingsOnWebsiteClickDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.autoCloseSettingsOnWebsiteClick}
@@ -694,8 +793,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>启用 JavaScript</Label>
-                <p className="text-sm text-muted-foreground">在浏览器中启用 JavaScript 执行</p>
+                <Label>{t('settings.enableJavaScript')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.enableJavaScriptDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.enableJavaScript}
@@ -705,8 +806,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>允许弹窗</Label>
-                <p className="text-sm text-muted-foreground">允许网站打开新窗口或弹窗</p>
+                <Label>{t('settings.allowPopups')}</Label>
+                <p className="text-sm text-muted-foreground">{t('settings.popupDescription')}</p>
               </div>
               <Switch
                 checked={settings.allowPopups}
@@ -718,8 +819,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>Session 隔离</Label>
-                <p className="text-sm text-muted-foreground">为每个网站创建独立的会话</p>
+                <Label>{t('settings.sessionIsolationEnabled')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.sessionIsolationEnabledDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.sessionIsolationEnabled}
@@ -731,8 +834,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>崩溃报告</Label>
-                <p className="text-sm text-muted-foreground">发送崩溃报告帮助改进应用</p>
+                <Label>{t('settings.crashReportingEnabled')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.crashReportingEnabledDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.crashReportingEnabled}
@@ -744,8 +849,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>保存会话</Label>
-                <p className="text-sm text-muted-foreground">退出时保存当前会话状态</p>
+                <Label>{t('settings.saveSession')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.saveSessionDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.saveSession}
@@ -754,13 +861,36 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>退出时清除缓存</Label>
-                <p className="text-sm text-muted-foreground">应用退出时自动清除浏览器缓存</p>
+              <div className="flex items-center justify-between flex-1">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.clearCacheOnExit')}</Label>
+                  <p className="text-sm text-muted-foreground">{t('settings.cacheDescription')}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 ml-2"
+                  onClick={() => setShowClearCacheSettingsDialog(true)}
+                  title={t('settings.clearCacheSettings')}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  >
+                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </Button>
               </div>
               <Switch
                 checked={settings.clearCacheOnExit}
                 onCheckedChange={(checked) => handleSettingChange('clearCacheOnExit', checked)}
+                className="ml-4"
               />
             </div>
 
@@ -786,8 +916,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>窗口置顶</Label>
-                <p className="text-sm text-muted-foreground">窗口始终显示在最前面</p>
+                <Label>{t('settings.windowAlwaysOnTop')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.windowAlwaysOnTopDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.windowAlwaysOnTop}
@@ -797,8 +929,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>小窗模式</Label>
-                <p className="text-sm text-muted-foreground">启用小窗模式</p>
+                <Label>{t('settings.windowMiniMode')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.windowMiniModeDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.windowMiniMode}
@@ -808,8 +942,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>窗口边缘吸附</Label>
-                <p className="text-sm text-muted-foreground">窗口靠近屏幕边缘时自动吸附</p>
+                <Label>{t('settings.windowAdsorptionEnabled')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.windowAdsorptionEnabledDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.windowAdsorptionEnabled}
@@ -821,7 +957,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             {settings.windowAdsorptionEnabled && (
               <div className="pl-4 space-y-2">
-                <Label>吸附灵敏度</Label>
+                <Label>{t('settings.windowAdsorptionSensitivity')}</Label>
                 <div className="flex items-center space-x-4">
                   <Slider
                     value={[settings.windowAdsorptionSensitivity || 50]}
@@ -842,8 +978,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label>系统托盘</Label>
-                <p className="text-sm text-muted-foreground">在系统托盘显示应用图标</p>
+                <Label>{t('settings.trayEnabled')}</Label>
+                <p className="text-sm text-muted-foreground">
+                  {t('settings.trayEnabledDescription')}
+                </p>
               </div>
               <Switch
                 checked={settings.trayEnabled}
@@ -855,8 +993,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
               <div className="pl-4 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>显示通知</Label>
-                    <p className="text-sm text-muted-foreground">在系统托盘显示通知</p>
+                    <Label>{t('settings.trayShowNotifications')}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('settings.trayShowNotificationsDescription')}
+                    </p>
                   </div>
                   <Switch
                     checked={settings.trayShowNotifications}
@@ -1276,6 +1416,47 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
         error={updateInfo?.error}
         isChecking={isCheckingUpdate}
       />
+
+      {/* 清理设置对话框 */}
+      <Dialog open={showClearCacheSettingsDialog} onOpenChange={setShowClearCacheSettingsDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+              >
+                <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              {t('settings.clearCacheSettings')}
+            </DialogTitle>
+            <DialogDescription>{t('settings.clearCacheSettingsDescription')}</DialogDescription>
+          </DialogHeader>
+          {/* 清理选项列表 - 使用配置数组渲染，便于维护 */}
+          <div className="space-y-4 mt-4">
+            <div className="space-y-3">
+              {clearCacheOptionsConfig.map((config) => (
+                <div key={config.key}>{renderClearCacheOption(config)}</div>
+              ))}
+            </div>
+          </div>
+          {/* 对话框操作按钮 */}
+          <div className="flex justify-end gap-2 mt-6">
+            <Button variant="outline" onClick={() => setShowClearCacheSettingsDialog(false)}>
+              {t('cancel', '取消')}
+            </Button>
+            <Button onClick={() => setShowClearCacheSettingsDialog(false)}>
+              {t('confirm', '确定')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 崩溃确认对话框 */}
       <Dialog open={showCrashConfirmDialog} onOpenChange={setShowCrashConfirmDialog}>

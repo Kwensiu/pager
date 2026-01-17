@@ -168,13 +168,23 @@ class SessionIsolationService {
   /**
    * 清除所有网站的 Session
    */
-  async clearAllSessions(): Promise<void> {
+  async clearAllSessions(options?: {
+    clearSessionCache?: boolean
+    clearStorageData?: boolean
+    clearAuthCache?: boolean
+  }): Promise<void> {
     await this.ensureInitialized()
     this.sessions.forEach((sess, partition) => {
       try {
-        sess.clearCache()
-        sess.clearStorageData()
-        sess.clearAuthCache()
+        if (options?.clearSessionCache !== false) {
+          sess.clearCache()
+        }
+        if (options?.clearStorageData !== false) {
+          sess.clearStorageData()
+        }
+        if (options?.clearAuthCache !== false) {
+          sess.clearAuthCache()
+        }
       } catch (error) {
         console.error(`Error clearing session ${partition}:`, error)
       }

@@ -101,6 +101,12 @@ async function getStore(): Promise<ElectronStore> {
           // 隐私与数据
           saveSession: true,
           clearCacheOnExit: false,
+          clearCacheOptions: {
+            clearStorageData: false,
+            clearAuthCache: false,
+            clearSessionCache: true,
+            clearDefaultSession: true
+          },
 
           // 扩展设置
           enableExtensions: true,
