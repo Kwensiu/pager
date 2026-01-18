@@ -50,7 +50,7 @@ export function ShortcutSettings(): React.ReactElement {
     try {
       // 获取默认快捷键配置
       const defaults = await window.api.enhanced.shortcut.getDefaults()
-      
+
       // 批量保存默认配置
       let successCount = 0
       const errors: Array<{ id: string; error: string }> = []
@@ -84,7 +84,9 @@ export function ShortcutSettings(): React.ReactElement {
       await loadShortcuts()
     } catch (error) {
       console.error('恢复默认配置失败:', error)
-      toast.error(error instanceof Error ? `恢复默认配置失败: ${error.message}` : '恢复默认配置失败')
+      toast.error(
+        error instanceof Error ? `恢复默认配置失败: ${error.message}` : '恢复默认配置失败'
+      )
     } finally {
       setIsLoading(false)
     }
@@ -350,7 +352,12 @@ export function ShortcutSettings(): React.ReactElement {
           <Undo className="h-4 w-4 mr-2" />
           恢复默认配置
         </Button>
-        <Button onClick={loadShortcuts} disabled={isLoading || isRefreshing} variant="outline" size="sm">
+        <Button
+          onClick={loadShortcuts}
+          disabled={isLoading || isRefreshing}
+          variant="outline"
+          size="sm"
+        >
           <RotateCcw className="h-4 w-4 mr-2" />
           刷新列表
         </Button>
