@@ -1,4 +1,4 @@
-name: Release Build ${{ github.event.inputs.version }}
+name: Release Build
 
 on:
   workflow_dispatch:
@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   release:
-    name: Build ${{ github.event.inputs.version }}
+    name: Build
     runs-on: windows-latest
     env:
       PLATFORM: win
@@ -86,9 +86,10 @@ jobs:
       - name: Verify build artifacts
         run: |
           echo "Checking build artifacts..."
-          if (Test-Path "build\dist\*.exe") {
-            Get-ChildItem "build\dist\*.exe" | ForEach-Object {
-              Write-Host "Found: $($_.Name) ($($_.Length) bytes)"
+          $exeFiles = Get-ChildItem -Path "build\dist" -Filter "*.exe"
+          if ($exeFiles) {
+            foreach ($file in $exeFiles) {
+              Write-Host "Found: $($file.Name) ($($file.Length) bytes)"
             }
           } else {
             Write-Host "Error: No exe files found in build/dist/"
@@ -104,7 +105,7 @@ jobs:
           if-no-files-found: error
 
   create-release:
-    name: Create Release ${{ github.event.inputs.version }}
+    name: Create Release
     needs: release
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch'
@@ -126,9 +127,9 @@ jobs:
           version="${{ needs.release.outputs.version }}"
           yarn release-notes "$version"
           {
-            echo 'release_notes<<EOF'
+            echo "release_notes<<EOF"
             cat RELEASE_NOTES.md
-            echo EOF
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
