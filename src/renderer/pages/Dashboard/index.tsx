@@ -19,7 +19,7 @@ function Dashboard({ currentWebsite }: DashboardProps): React.ReactElement {
   const restoreSessions = useCallback(async (): Promise<void> => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sessionAPI = (window.api as any).session
+      const sessionAPI = (window.api as any)?.session
 
       if (sessionAPI && sessionAPI.getAll) {
         const sessions = await sessionAPI.getAll()

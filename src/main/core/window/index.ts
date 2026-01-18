@@ -146,10 +146,10 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
   const appPath = app.getAppPath()
   const preloadPath =
     process.env.NODE_ENV === 'development'
-      ? join(appPath, 'out/preload/index.js')
+      ? join(appPath, 'build/out/preload/index.js')
       : process.platform === 'win32'
-        ? join(process.resourcesPath, 'app.asar.unpacked', 'out', 'preload', 'index.js')
-        : join(appPath, 'out/preload/index.js')
+        ? join(process.resourcesPath, 'app.asar.unpacked', 'build', 'out', 'preload', 'index.js')
+        : join(appPath, 'build/out/preload/index.js')
 
   console.log('Preload path:', preloadPath)
 
