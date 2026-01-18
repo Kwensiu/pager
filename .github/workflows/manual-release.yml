@@ -78,6 +78,7 @@ jobs:
       - name: Build application
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APP_VERSION_ENV: ${{ steps.set_version.outputs.version }}
         run: |
           yarn build
           yarn build:unpack

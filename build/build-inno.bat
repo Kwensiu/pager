@@ -62,11 +62,23 @@ if exist "%INNO_SCRIPT%" (
 REM 创建输出目录
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
-REM 更新版本号（从package.json读取）
-for /f "tokens=3" %%i in ('findstr "version" %PKG_JSON_PATH%') do (
-    set APP_VERSION=%%i
-    set APP_VERSION=!APP_VERSION:"=!
-    set APP_VERSION=!APP_VERSION:,=!
+REM 更新版本号（从package.json读取或环境变量）
+echo Reading version...
+if defined APP_VERSION_ENV (
+    set APP_VERSION=%APP_VERSION_ENV%
+    echo Using version from environment: %APP_VERSION%
+) else (
+    echo Reading version from %PKG_JSON_PATH%...
+    for /f "usebackq tokens=2 delims=:," %%i in (%PKG_JSON_PATH%) do (
+        if "%%i"==" "version" (
+            set APP_VERSION=%%j
+            set APP_VERSION=!APP_VERSION:"=!
+            set APP_VERSION=!APP_VERSION: =!
+            goto :version_found
+        )
+    )
+    :version_found
+    echo Extracted version: !APP_VERSION!
 )
 
 echo Building %APP_NAME% version %APP_VERSION%...
