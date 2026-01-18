@@ -1,8 +1,8 @@
 ; Inno Setup 安装脚本
 ; 用于 Pager 应用程序的 Windows 安装程序
 
-#define MyAppName GetEnv('APP_NAME')
-#define MyAppVersion GetEnv('APP_VERSION')
+#define MyAppName "Pager"
+#define MyAppVersion "0.1.1"
 #define MyAppPublisher "Kwensiu"
 #define MyAppURL "https://github.com/Kwensiu/Pager"
 #define MyAppExeName "Pager.exe"
@@ -67,6 +67,7 @@ english.AssociateFiles=Associate file types
 english.CreateQuickLaunchIcon=Create quick launch icon
 english.AdditionalIcons=Additional icons
 english.AutoStartProgramGroup=Auto-start program group
+english.KeepAppData=Keep application data and settings
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopShortcut}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -118,6 +119,38 @@ external 'FindWindowA@user32.dll stdcall';
 
 function GetWindowText(hWnd: HWND; lpString: String; nMaxCount: Integer): Integer;
 external 'GetWindowTextA@user32.dll stdcall';
+
+// 全局变量用于存储卸载选项
+var
+  UninstallDataPage: TInputOptionWizardPage;
+  KeepAppDataCheckbox: TNewCheckBox;
+
+// 创建自定义卸载页面
+function CreateUninstallCustomPage(): Boolean;
+begin
+  // 只有在卸载时才创建自定义页面
+  if UninstallProgressForm <> nil then
+  begin
+    UninstallDataPage := CreateInputOptionPage(wpWelcome, 
+      '选择卸载选项', 
+      '数据保留设置', 
+      '选择是否在卸载应用程序时保留个人数据和设置文件。',
+      False, False);
+    
+    // 添加复选框选项
+    KeepAppDataCheckbox := TNewCheckBox.Create(UninstallDataPage);
+    KeepAppDataCheckbox.Parent := UninstallDataPage.Surface;
+    KeepAppDataCheckbox.Caption := '保留应用数据和配置文件';
+    KeepAppDataCheckbox.Checked := True; // 默认选中保留数据
+    KeepAppDataCheckbox.Top := 16;
+    KeepAppDataCheckbox.Left := 0;
+    KeepAppDataCheckbox.Width := UninstallDataPage.SurfaceWidth;
+    
+    Result := True;
+  end
+  else
+    Result := False;
+end;
 
 // 检测应用是否正在运行（严格检测方法）
 function IsAppRunning(): Boolean;
@@ -364,11 +397,11 @@ begin
   end;
 end;
 
-// 卸载时询问是否保留数据
+// 卸载时根据用户选择处理数据
 function UninstallNeedRestart(): Boolean;
 begin
-  if MsgBox('是否保留应用数据和配置文件？' + #13#10 + #13#10 + '选择"是"保留数据，选择"否"完全删除。', 
-             mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+  // 检查用户是否选择了保留数据
+  if (KeepAppDataCheckbox <> nil) and KeepAppDataCheckbox.Checked then
   begin
     // 用户选择保留数据
     Result := False;
@@ -386,4 +419,6 @@ end;
 function InitializeUninstall(): Boolean;
 begin
   Result := True;
+  // 创建自定义卸载页面
+  CreateUninstallCustomPage();
 end;
