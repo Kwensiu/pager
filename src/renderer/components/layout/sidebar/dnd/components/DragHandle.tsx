@@ -14,6 +14,8 @@ interface DragHandleProps {
   size?: 'sm' | 'md' | 'lg'
   /** 是否显示提示文本 */
   showTooltip?: boolean
+  /** 预设类型 */
+  variant?: 'default' | 'secondary' | 'website'
 }
 
 export const DragHandle: React.FC<DragHandleProps> = ({
@@ -22,8 +24,24 @@ export const DragHandle: React.FC<DragHandleProps> = ({
   onClick,
   className = '',
   size = 'md',
-  showTooltip = true
+  showTooltip = true,
+  variant = 'default'
 }) => {
+  // 根据预设类型设置默认尺寸和边距
+  const getDefaultProps = (): { size: 'sm' | 'md' | 'lg'; className: string } => {
+    switch (variant) {
+      case 'secondary':
+        return { size: 'md', className: 'mr-2' }
+      case 'website':
+        return { size: 'sm', className: 'mr-1.5' }
+      default:
+        return { size, className: '' }
+    }
+  }
+
+  const { size: finalSize, className: variantClassName } = getDefaultProps()
+  const finalClassName = `${variantClassName} ${className}`.trim()
+
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-5 h-5',
@@ -48,8 +66,8 @@ export const DragHandle: React.FC<DragHandleProps> = ({
         transition-all
         duration-200
         ${disabled ? 'cursor-not-allowed opacity-30' : isDragging ? 'cursor-grabbing opacity-100' : 'cursor-grab opacity-70 hover:opacity-100'}
-        ${sizeClasses[size]}
-        ${className}
+        ${sizeClasses[finalSize]}
+        ${finalClassName}
       `}
       onClick={handleClick}
       role="button"
@@ -67,33 +85,6 @@ export const DragHandle: React.FC<DragHandleProps> = ({
       <span className="sr-only">
         按空格键开始拖拽，使用方向键移动，按Enter键放置，按Escape键取消
       </span>
-    </div>
-  )
-}
-
-// 用于二级分组的拖拽手柄
-export const SecondaryGroupDragHandle: React.FC<Omit<DragHandleProps, 'size'>> = (props) => {
-  return <DragHandle {...props} size="md" className={`mr-2 ${props.className || ''}`} />
-}
-
-// 用于网站的拖拽手柄
-export const WebsiteDragHandle: React.FC<Omit<DragHandleProps, 'size'>> = (props) => {
-  return <DragHandle {...props} size="sm" className={`mr-1.5 ${props.className || ''}`} />
-}
-
-// 简化版本，仅图标
-export const SimpleDragHandle: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
-  return (
-    <div
-      className={`
-        inline-flex items-center justify-center
-        ${disabled ? 'cursor-not-allowed opacity-30' : 'cursor-grab opacity-70'}
-      `}
-      role="button"
-      aria-label="拖拽"
-      aria-disabled={disabled}
-    >
-      <GripVertical className="w-4 h-4" strokeWidth={1.5} />
     </div>
   )
 }

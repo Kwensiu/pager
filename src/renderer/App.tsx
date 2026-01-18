@@ -49,8 +49,43 @@ function App(): JSX.Element {
       }
     }
 
+    // 监听主进程主题变化事件
+    const handleThemeChanged = (...args: unknown[]): void => {
+      const theme = args[0] as 'light' | 'dark'
+      console.log('[App] Theme changed from main process:', theme)
+
+      // 更新localStorage中的主题设置
+      const savedSettings = localStorage.getItem('settings')
+      let settings: Record<string, unknown> = {}
+
+      if (savedSettings) {
+        try {
+          settings = JSON.parse(savedSettings)
+        } catch (error) {
+          console.error('Failed to parse settings:', error)
+        }
+      }
+
+      settings.theme = theme
+      localStorage.setItem('settings', JSON.stringify(settings))
+
+      // 应用主题
+      applyTheme()
+    }
+
     window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
+
+    // 监听主进程的主题变化事件
+    if (window.api?.ipcRenderer?.on) {
+      window.api.ipcRenderer.on('theme-changed', handleThemeChanged)
+    }
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      if (window.api?.ipcRenderer?.removeAllListeners) {
+        window.api.ipcRenderer.removeAllListeners('theme-changed')
+      }
+    }
   }, [])
 
   const handleWebsiteClick = (website: Website): void => {

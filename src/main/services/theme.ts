@@ -1,3 +1,5 @@
+import { BrowserWindow } from 'electron'
+
 type ThemeMode = 'light' | 'dark' // 删除 'system'
 
 /**
@@ -7,9 +9,17 @@ type ThemeMode = 'light' | 'dark' // 删除 'system'
  */
 class ThemeService {
   private currentTheme: ThemeMode = 'dark' // 默认深色
+  private mainWindow: BrowserWindow | null = null
 
   constructor() {
     // Initialize with system theme
+  }
+
+  /**
+   * 设置主窗口引用
+   */
+  setMainWindow(window: BrowserWindow): void {
+    this.mainWindow = window
   }
 
   /**
@@ -17,6 +27,20 @@ class ThemeService {
    */
   setTheme(theme: ThemeMode): void {
     this.currentTheme = theme
+    this.applyThemeToWindow()
+  }
+
+  /**
+   * 应用主题到窗口
+   */
+  private applyThemeToWindow(): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return
+    }
+
+    // 发送主题变化事件到渲染进程
+    this.mainWindow.webContents.send('theme-changed', this.currentTheme)
+    console.log(`Theme applied to window: ${this.currentTheme}`)
   }
 
   /**

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '../../ui/button'
 import { Label } from '../../ui/label'
-import { Switch } from '../../ui/switch'
 import { Badge } from '../../ui/badge'
 import { ScrollArea } from '../../ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../ui/tooltip'
@@ -9,20 +8,48 @@ import { toast } from 'sonner'
 import type { Shortcut } from '../../../shared/types/store'
 import { Keyboard, RotateCcw, Plus, HelpCircle } from 'lucide-react'
 
-interface ShortcutSettingsProps {
-  shortcutsEnabled: boolean
-  onShortcutsEnabledChange: (enabled: boolean) => void
-}
-
-export function ShortcutSettings({
-  shortcutsEnabled,
-  onShortcutsEnabledChange
-}: ShortcutSettingsProps): React.ReactElement {
+export function ShortcutSettings(): React.ReactElement {
   const [shortcuts, setShortcuts] = useState<Shortcut[]>([])
   const [editingShortcut, setEditingShortcut] = useState<Shortcut | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [capturedKeys, setCapturedKeys] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  // 启动所有默认快捷键
+  const enableAllShortcuts = async (): Promise<void> => {
+    setIsLoading(true)
+    try {
+      const result = await window.api.enhanced.shortcut.enableAll()
+      if (result.success) {
+        toast.success(result.message || '快捷键启用成功')
+        await loadShortcuts()
+      } else {
+        toast.error(result.message || '快捷键启用失败')
+      }
+    } catch {
+      toast.error('启用快捷键失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 禁用所有快捷键
+  const disableAllShortcuts = async (): Promise<void> => {
+    setIsLoading(true)
+    try {
+      const result = await window.api.enhanced.shortcut.disableAll()
+      if (result.success) {
+        toast.success(result.message || '快捷键禁用成功')
+        setShortcuts([])
+      } else {
+        toast.error(result.message || '快捷键禁用失败')
+      }
+    } catch {
+      toast.error('禁用快捷键失败')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // 加载快捷键列表
   const loadShortcuts = useCallback(async (): Promise<void> => {
@@ -183,46 +210,9 @@ export function ShortcutSettings({
   }, [isListening, capturedKeys, editingShortcut, saveShortcutWithValidation, loadShortcuts])
 
   useEffect(() => {
-    if (shortcutsEnabled) {
-      loadShortcuts()
-    }
-  }, [shortcutsEnabled, loadShortcuts])
-
-  // 启动所有默认快捷键
-  const enableAllShortcuts = async (): Promise<void> => {
-    setIsLoading(true)
-    try {
-      const result = await window.api.enhanced.shortcut.enableAll()
-      if (result.success) {
-        toast.success(result.message || '快捷键启用成功')
-        await loadShortcuts()
-      } else {
-        toast.error(result.message || '快捷键启用失败')
-      }
-    } catch {
-      toast.error('启用快捷键失败')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  // 禁用所有快捷键
-  const disableAllShortcuts = async (): Promise<void> => {
-    setIsLoading(true)
-    try {
-      const result = await window.api.enhanced.shortcut.disableAll()
-      if (result.success) {
-        toast.success(result.message || '快捷键禁用成功')
-        setShortcuts([])
-      } else {
-        toast.error(result.message || '快捷键禁用失败')
-      }
-    } catch {
-      toast.error('禁用快捷键失败')
-    } finally {
-      setIsLoading(false)
-    }
-  }
+    // 组件挂载时加载快捷键列表
+    loadShortcuts()
+  }, [loadShortcuts])
 
   // 获取快捷键类型显示文本
   const getShortcutTypeText = (shortcut: Shortcut): React.ReactElement => {
@@ -253,171 +243,166 @@ export function ShortcutSettings({
 
   return (
     <div className="space-y-6">
-      {/* 开关控制 */}
+      {/* 标题 */}
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label className="text-base font-semibold">全局快捷键</Label>
-          <p className="text-sm text-muted-foreground">启用全局快捷键功能，提升操作效率</p>
+          <p className="text-sm text-muted-foreground">管理全局快捷键功能，提升操作效率</p>
         </div>
-        <Switch checked={shortcutsEnabled} onCheckedChange={onShortcutsEnabledChange} />
       </div>
 
-      {shortcutsEnabled && (
-        <>
-          {/* 操作按钮 */}
-          <div className="flex gap-2">
-            <Button onClick={enableAllShortcuts} disabled={isLoading} variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              启动所有快捷键
-            </Button>
-            <Button onClick={disableAllShortcuts} disabled={isLoading} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              禁用所有快捷键
-            </Button>
-            <Button onClick={loadShortcuts} disabled={isLoading} variant="outline" size="sm">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              刷新列表
-            </Button>
+      {/* 操作按钮 */}
+      <div className="flex gap-2">
+        <Button onClick={enableAllShortcuts} disabled={isLoading} variant="outline" size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          启动所有快捷键
+        </Button>
+        <Button onClick={disableAllShortcuts} disabled={isLoading} variant="outline" size="sm">
+          <RotateCcw className="h-4 w-4 mr-2" />
+          禁用所有快捷键
+        </Button>
+        <Button onClick={loadShortcuts} disabled={isLoading} variant="outline" size="sm">
+          <RotateCcw className="h-4 w-4 mr-2" />
+          刷新列表
+        </Button>
+      </div>
+
+      {/* 快捷键列表 - 紧凑表格形式 */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 mb-4">
+          <Keyboard className="h-5 w-5" />
+          <h3 className="text-lg font-semibold">快捷键列表</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          管理应用的快捷键配置，支持全局和应用内快捷键。点击类型、快捷键或状态可直接修改。
+        </p>
+
+        <div className="border rounded-lg">
+          <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50">
+            <div className="font-medium text-sm">功能</div>
+            <div className="font-medium text-sm">类型</div>
+            <div className="font-medium text-sm">快捷键</div>
+            <div className="font-medium text-sm text-right">状态</div>
           </div>
-
-          {/* 快捷键列表 - 紧凑表格形式 */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Keyboard className="h-5 w-5" />
-              <h3 className="text-lg font-semibold">快捷键列表</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              管理应用的快捷键配置，支持全局和应用内快捷键。点击类型、快捷键或状态可直接修改。
-            </p>
-
-            <div className="border rounded-lg">
-              <div className="grid grid-cols-4 gap-4 p-3 border-b bg-muted/50">
-                <div className="font-medium text-sm">功能</div>
-                <div className="font-medium text-sm">类型</div>
-                <div className="font-medium text-sm">快捷键</div>
-                <div className="font-medium text-sm text-right">状态</div>
-              </div>
-              <ScrollArea className="h-[400px]">
-                <div className="divide-y">
-                  {shortcuts.map((shortcut) => {
-                    const isRegistered = getShortcutRegisteredStatus(shortcut)
-                    const isCurrentlyEditing = isListening && editingShortcut?.id === shortcut.id
-                    return (
-                      <div
-                        key={shortcut.id}
-                        className="grid grid-cols-4 gap-4 p-3 items-center hover:bg-muted/30 transition-colors"
+          <ScrollArea className="h-[400px]">
+            <div className="divide-y">
+              {shortcuts.map((shortcut) => {
+                const isRegistered = getShortcutRegisteredStatus(shortcut)
+                const isCurrentlyEditing = isListening && editingShortcut?.id === shortcut.id
+                return (
+                  <div
+                    key={shortcut.id}
+                    className="grid grid-cols-4 gap-4 p-3 items-center hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-medium text-sm">{shortcut.tag}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          const updatedShortcut = { ...shortcut, isGlobal: !shortcut.isGlobal }
+                          await saveShortcutWithValidation(updatedShortcut)
+                          // 重新加载状态以确保UI更新
+                          await loadShortcuts()
+                        }}
+                        disabled={
+                          isLoading ||
+                          isListening ||
+                          shortcut.id === 'refresh-page' ||
+                          shortcut.id === 'copy-url' ||
+                          shortcut.id === 'toggle-sidebar' ||
+                          shortcut.id === 'open-settings'
+                        }
+                        className="h-auto p-1"
                       >
-                        <div className="space-y-1">
-                          <div className="font-medium text-sm">{shortcut.tag}</div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              const updatedShortcut = { ...shortcut, isGlobal: !shortcut.isGlobal }
-                              await saveShortcutWithValidation(updatedShortcut)
-                              // 重新加载状态以确保UI更新
-                              await loadShortcuts()
-                            }}
-                            disabled={
-                              isLoading ||
-                              isListening ||
-                              shortcut.id === 'refresh-page' ||
-                              shortcut.id === 'copy-url' ||
-                              shortcut.id === 'toggle-sidebar' ||
-                              shortcut.id === 'open-settings'
-                            }
-                            className="h-auto p-1"
-                          >
-                            {getShortcutTypeText(shortcut)}
-                          </Button>
-                          {(shortcut.id === 'refresh-page' ||
-                            shortcut.id === 'copy-url' ||
-                            shortcut.id === 'toggle-sidebar' ||
-                            shortcut.id === 'open-settings') && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted/80 cursor-help">
-                                    <HelpCircle className="w-3 h-3 text-muted-foreground" />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {shortcut.id === 'refresh-page'
-                                      ? '刷新快捷键只能在应用内生效'
-                                      : shortcut.id === 'copy-url'
-                                        ? '复制URL快捷键只能在应用内生效'
-                                        : shortcut.id === 'toggle-sidebar'
-                                          ? '侧边栏导航快捷键只能在应用内生效'
-                                          : '设置界面快捷键只能在应用内生效'}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          )}
-                        </div>
-                        <div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              setEditingShortcut(shortcut)
-                              await startListening()
-                            }}
-                            disabled={isListening || !isRegistered}
-                            className={`h-auto p-1 font-mono text-sm transition-colors ${
-                              isCurrentlyEditing
-                                ? 'bg-red-100 dark:bg-red-900 border-red-300 dark:border-red-700'
-                                : 'hover:bg-muted'
-                            }`}
-                          >
-                            <code
-                              className={`px-2 py-1 rounded ${
-                                isCurrentlyEditing
-                                  ? 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100'
-                                  : 'bg-muted'
-                              }`}
-                            >
-                              {isCurrentlyEditing
-                                ? capturedKeys.length > 0
-                                  ? formatShortcut(capturedKeys) + '...'
-                                  : '监听中...'
-                                : shortcut.cmd}
-                            </code>
-                          </Button>
-                        </div>
-                        <div className="flex justify-end">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={async () => {
-                              if (isRegistered) {
-                                // 禁用快捷键：更新 isOpen 为 false
-                                await saveShortcutWithValidation({ ...shortcut, isOpen: false })
-                              } else {
-                                // 启用快捷键：更新 isOpen 为 true
-                                await saveShortcutWithValidation({ ...shortcut, isOpen: true })
-                              }
-                              // 重新加载状态以确保UI更新
-                              await loadShortcuts()
-                            }}
-                            disabled={isLoading}
-                            className="h-auto p-1"
-                          >
-                            {getStatusText(shortcut)}
-                          </Button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </ScrollArea>
+                        {getShortcutTypeText(shortcut)}
+                      </Button>
+                      {(shortcut.id === 'refresh-page' ||
+                        shortcut.id === 'copy-url' ||
+                        shortcut.id === 'toggle-sidebar' ||
+                        shortcut.id === 'open-settings') && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center justify-center w-4 h-4 rounded-full bg-muted hover:bg-muted/80 cursor-help">
+                                <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {shortcut.id === 'refresh-page'
+                                  ? '刷新快捷键只能在应用内生效'
+                                  : shortcut.id === 'copy-url'
+                                    ? '复制URL快捷键只能在应用内生效'
+                                    : shortcut.id === 'toggle-sidebar'
+                                      ? '侧边栏导航快捷键只能在应用内生效'
+                                      : '设置界面快捷键只能在应用内生效'}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
+                    <div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          setEditingShortcut(shortcut)
+                          await startListening()
+                        }}
+                        disabled={isListening || !isRegistered}
+                        className={`h-auto p-1 font-mono text-sm transition-colors ${
+                          isCurrentlyEditing
+                            ? 'bg-red-100 dark:bg-red-900 border-red-300 dark:border-red-700'
+                            : 'hover:bg-muted'
+                        }`}
+                      >
+                        <code
+                          className={`px-2 py-1 rounded ${
+                            isCurrentlyEditing
+                              ? 'bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-100'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {isCurrentlyEditing
+                            ? capturedKeys.length > 0
+                              ? formatShortcut(capturedKeys) + '...'
+                              : '监听中...'
+                            : shortcut.cmd}
+                        </code>
+                      </Button>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={async () => {
+                          if (isRegistered) {
+                            // 禁用快捷键：更新 isOpen 为 false
+                            await saveShortcutWithValidation({ ...shortcut, isOpen: false })
+                          } else {
+                            // 启用快捷键：更新 isOpen 为 true
+                            await saveShortcutWithValidation({ ...shortcut, isOpen: true })
+                          }
+                          // 重新加载状态以确保UI更新
+                          await loadShortcuts()
+                        }}
+                        disabled={isLoading}
+                        className="h-auto p-1"
+                      >
+                        {getStatusText(shortcut)}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </div>
-        </>
-      )}
+          </ScrollArea>
+        </div>
+      </div>
     </div>
   )
 }

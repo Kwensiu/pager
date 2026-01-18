@@ -1,4 +1,5 @@
 import { PrimaryGroup, SecondaryGroup, Website } from '@/types/website'
+import { secondaryGroupSortUtils, websiteSortUtils, calculateInsertOrder } from './sortUtils'
 
 // 迁移标记键名
 const MIGRATION_KEY = 'drag-drop-migration-v1'
@@ -75,104 +76,45 @@ export function hasMigrated(): boolean {
  * 获取排序后的二级分组
  */
 export function getSortedSecondaryGroups(groups: SecondaryGroup[]): SecondaryGroup[] {
-  return [...groups].sort((a, b) => {
-    // 如果 order 不存在，使用默认值
-    const orderA = a.order !== undefined ? a.order : 0
-    const orderB = b.order !== undefined ? b.order : 0
-    return orderA - orderB
-  })
+  return secondaryGroupSortUtils.getSorted(groups)
 }
 
 /**
  * 获取排序后的网站
  */
 export function getSortedWebsites(websites: Website[]): Website[] {
-  return [...websites].sort((a, b) => {
-    // 如果 order 不存在，使用默认值
-    const orderA = a.order !== undefined ? a.order : 0
-    const orderB = b.order !== undefined ? b.order : 0
-    return orderA - orderB
-  })
+  return websiteSortUtils.getSorted(websites)
 }
 
 /**
- * 更新二级分组顺序
+ * 更新二级分组顺序 - 使用统一的排序工具
  */
 export function updateSecondaryGroupOrder(
   groups: SecondaryGroup[],
   draggedId: string,
   targetIndex: number
 ): SecondaryGroup[] {
-  const sortedGroups = getSortedSecondaryGroups(groups)
-  const draggedIndex = sortedGroups.findIndex((g) => g.id === draggedId)
-
-  if (draggedIndex === -1) {
-    return groups
-  }
-
-  // 移除拖拽项
-  const [draggedItem] = sortedGroups.splice(draggedIndex, 1)
-
-  // 插入到目标位置
-  sortedGroups.splice(targetIndex, 0, draggedItem)
-
-  // 重新计算 order 值（使用间隔便于后续插入）
-  return sortedGroups.map((group, index) => ({
-    ...group,
-    order: index * 100,
-    updatedAt: Date.now()
-  }))
+  return secondaryGroupSortUtils.moveItem(groups, draggedId, targetIndex)
 }
 
 /**
- * 更新网站顺序
+ * 更新网站顺序 - 使用统一的排序工具
  */
 export function updateWebsiteOrder(
   websites: Website[],
   draggedId: string,
   targetIndex: number
 ): Website[] {
-  const sortedWebsites = getSortedWebsites(websites)
-  const draggedIndex = sortedWebsites.findIndex((w) => w.id === draggedId)
-
-  if (draggedIndex === -1) {
-    return websites
-  }
-
-  // 移除拖拽项
-  const [draggedItem] = sortedWebsites.splice(draggedIndex, 1)
-
-  // 插入到目标位置
-  sortedWebsites.splice(targetIndex, 0, draggedItem)
-
-  // 重新计算 order 值
-  return sortedWebsites.map((website, index) => ({
-    ...website,
-    order: index * 100,
-    updatedAt: Date.now()
-  }))
+  return websiteSortUtils.moveItem(websites, draggedId, targetIndex)
 }
 
 /**
  * 计算新的 order 值（用于插入操作）
  */
 export function calculateNewOrder(items: Array<{ order: number }>, targetIndex: number): number {
-  if (items.length === 0) {
-    return 0
-  }
-
-  if (targetIndex === 0) {
-    // 插入到最前面
-    return items[0].order - 100
-  }
-
-  if (targetIndex >= items.length) {
-    // 插入到最后面
-    return items[items.length - 1].order + 100
-  }
-
-  // 插入到中间
-  const prevOrder = items[targetIndex - 1].order
-  const nextOrder = items[targetIndex].order
-  return Math.floor((prevOrder + nextOrder) / 2)
+  return calculateInsertOrder(
+    targetIndex > 0 ? items[targetIndex - 1] : null,
+    targetIndex < items.length ? items[targetIndex] : null,
+    0
+  )
 }

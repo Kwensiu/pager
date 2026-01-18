@@ -343,13 +343,57 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     }
   }
 
+  const applySettingsWithUpdates = async (updates: Partial<typeof settings>): Promise<void> => {
+    try {
+      const { api } = window
+
+      if (!api?.enhanced) {
+        console.warn('Enhanced API not available')
+        return
+      }
+
+      // 应用主题
+      if (api.enhanced.theme?.set && updates.theme) {
+        await api.enhanced.theme.set(updates.theme as 'light' | 'dark')
+      }
+
+      // 应用窗口管理设置
+      if (
+        updates.windowAlwaysOnTop !== undefined &&
+        api.enhanced.windowManager?.toggleAlwaysOnTop
+      ) {
+        await api.enhanced.windowManager.toggleAlwaysOnTop()
+      }
+
+      // 应用内存优化
+      if (updates.memoryOptimizerEnabled !== undefined && api.enhanced.memoryOptimizer) {
+        if (updates.memoryOptimizerEnabled) {
+          await api.enhanced.memoryOptimizer.start()
+        } else {
+          await api.enhanced.memoryOptimizer.stop()
+        }
+      }
+
+      // 应用自动启动
+      if (updates.isAutoLaunch !== undefined && api.enhanced.autoLaunch) {
+        if (updates.isAutoLaunch) {
+          await api.enhanced.autoLaunch.enable()
+        } else {
+          await api.enhanced.autoLaunch.disable()
+        }
+      }
+
+      console.log('Settings applied successfully with updates:', updates)
+    } catch (error) {
+      console.error('Failed to apply settings with updates:', error)
+      // 不抛出错误，避免影响 UI 状态
+    }
+  }
+
   const handleSettingChange = async (key: keyof typeof settings, value: unknown): Promise<void> => {
     // 立即更新 UI 状态
-    if (key === 'clearCacheOptions') {
-      updateSettings({ [key]: value } as Partial<typeof settings>)
-    } else {
-      updateSettings({ [key]: value } as Partial<typeof settings>)
-    }
+    const updatedSettings = { [key]: value } as Partial<typeof settings>
+    updateSettings(updatedSettings)
 
     // 对于某些特殊设置，延迟应用以避免状态冲突
     const settingsRequiringDelay = [
@@ -363,7 +407,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       // 延迟应用设置，给系统状态同步时间
       setTimeout(async () => {
         try {
-          await saveSettings()
+          await applySettingsWithUpdates(updatedSettings)
         } catch (error) {
           console.error('Failed to apply settings:', error)
           // 如果应用失败，不恢复 UI 状态，让用户看到他们选择的状态
@@ -372,7 +416,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
     } else {
       // 对于其他设置，立即应用
       try {
-        await saveSettings()
+        await applySettingsWithUpdates(updatedSettings)
       } catch (error) {
         console.error('Failed to apply settings:', error)
       }
@@ -1074,12 +1118,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
             <Separator />
 
             {/* 快捷键设置 */}
-            <ShortcutSettings
-              shortcutsEnabled={settings.shortcutsEnabled || false}
-              onShortcutsEnabledChange={(enabled) =>
-                handleSettingChange('shortcutsEnabled', enabled)
-              }
-            />
+            <ShortcutSettings />
           </div>
         </TabsContent>
 

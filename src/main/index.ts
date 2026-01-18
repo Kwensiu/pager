@@ -3,6 +3,7 @@ import { join } from 'path'
 import { globalProxyService } from './services/proxyService'
 import { shortcutService } from './services/shortcut'
 import { windowManager } from './services/windowManager'
+import { themeService } from './services/theme'
 import { registerIpcHandlers } from './ipc/handlers'
 import { createWindow } from './core/window/index'
 import { versionChecker } from './services/versionChecker'
@@ -58,6 +59,9 @@ app.whenReady().then(async () => {
   mainWindow = await createWindow()
   await registerIpcHandlers(mainWindow)
 
+  // 设置主题服务的主窗口引用
+  themeService.setMainWindow(mainWindow)
+
   // 初始化快捷键服务
   try {
     windowManager.setMainWindow(mainWindow)
@@ -67,18 +71,28 @@ app.whenReady().then(async () => {
     const { memoryOptimizerService } = await import('./services')
     memoryOptimizerService.setMainWindow(mainWindow)
 
-    // 获取用户保存的快捷键配置，如果没有则使用默认配置
+    // 获取用户设置
     const storeService = await getStoreService()
-    const savedShortcuts = await storeService.getShortcuts()
+    const settings = await storeService.getSettings()
 
-    const shortcutsToRegister =
-      savedShortcuts.length > 0 ? savedShortcuts : shortcutService.getDefaultShortcuts()
+    // 只有在启用快捷键时才注册快捷键
+    if (settings.shortcutsEnabled) {
+      // 获取用户保存的快捷键配置，如果没有则使用默认配置
+      const savedShortcuts = await storeService.getShortcuts()
 
-    for (const shortcut of shortcutsToRegister) {
-      if (shortcut.isOpen) {
-        const callback = shortcutService.createShortcutCallback(shortcut.id)
-        shortcutService.register(shortcut, callback)
+      const shortcutsToRegister =
+        savedShortcuts.length > 0 ? savedShortcuts : shortcutService.getDefaultShortcuts()
+
+      for (const shortcut of shortcutsToRegister) {
+        if (shortcut.isOpen) {
+          const callback = shortcutService.createShortcutCallback(shortcut.id)
+          shortcutService.register(shortcut, callback)
+        }
       }
+
+      console.log('Shortcuts service initialized with shortcuts enabled')
+    } else {
+      console.log('Shortcuts service initialized with shortcuts disabled')
     }
   } catch (error) {
     console.error('初始化快捷键服务失败:', error)

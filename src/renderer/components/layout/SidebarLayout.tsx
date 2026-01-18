@@ -22,6 +22,7 @@ import { ConfirmDialog } from '@/components/features/ConfirmDialog'
 import SettingsDialog from '@/components/features/SettingsDialog'
 import { Website } from '@/types/website'
 import { useSettings } from '@/hooks/useSettings'
+import { SidebarLockProvider } from './sidebar/contexts/SidebarLockContext'
 import type { Shortcut } from '../../../shared/types/store'
 
 interface SidebarLayoutProps {
@@ -617,13 +618,15 @@ export default function SidebarLayout({
 
   return (
     <SidebarProvider>
-      <SidebarLayoutInner
-        activeWebsiteId={activeWebsiteId}
-        onWebsiteClick={onWebsiteClick}
-        collapsedSidebarMode={collapsedSidebarMode || 'all'}
-      >
-        {children}
-      </SidebarLayoutInner>
+      <SidebarLockProvider>
+        <SidebarLayoutInner
+          activeWebsiteId={activeWebsiteId}
+          onWebsiteClick={onWebsiteClick}
+          collapsedSidebarMode={collapsedSidebarMode || 'all'}
+        >
+          {children}
+        </SidebarLayoutInner>
+      </SidebarLockProvider>
     </SidebarProvider>
   )
 }

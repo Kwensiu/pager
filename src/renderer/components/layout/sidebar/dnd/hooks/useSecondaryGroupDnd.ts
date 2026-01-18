@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { DraggableAttributes } from '@dnd-kit/core'
 import { SecondaryGroup } from '@/types/website'
+import { getDraggableStyle, getSecondaryGroupDragHandleStyle } from '../utils/styleUtils'
 
 interface UseSecondaryGroupDndProps {
   id: string
@@ -56,25 +57,13 @@ export function useSecondaryGroupDnd({
     }
   })
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || undefined,
-    opacity: isDragging ? 0.5 : 1,
-    position: 'relative' as const,
-    zIndex: isDragging ? 1000 : 'auto'
-  }
+  const style: React.CSSProperties = getDraggableStyle(
+    CSS.Transform.toString(transform),
+    transition,
+    isDragging
+  )
 
-  const dragHandleStyle: React.CSSProperties = {
-    cursor: isDragging ? 'grabbing' : 'grab',
-    opacity: isDragging ? 1 : 0.6,
-    transition: 'opacity 0.2s ease',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '20px',
-    height: '20px',
-    marginRight: '8px'
-  }
+  const dragHandleStyle: React.CSSProperties = getSecondaryGroupDragHandleStyle(isDragging)
 
   const handleDragStart = useCallback(() => {
     // 可以在这里添加自定义逻辑，比如播放声音、显示提示等
@@ -104,49 +93,5 @@ export function useSecondaryGroupDnd({
     // 方法
     handleDragStart,
     handleDragEnd
-  }
-}
-
-// 简化版本，用于不需要完整功能的场景
-export function useBasicSecondaryGroupDnd(
-  id: string,
-  disabled = false
-): UseSecondaryGroupDndReturn {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-    disabled
-  })
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1
-  }
-
-  const dragHandleStyle: React.CSSProperties = {
-    cursor: isDragging ? 'grabbing' : 'grab',
-    opacity: isDragging ? 1 : 0.6,
-    transition: 'opacity 0.2s ease',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '20px',
-    height: '20px',
-    marginRight: '8px'
-  }
-
-  return {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform: CSS.Transform.toString(transform),
-    transition,
-    isDragging,
-    isOver: false,
-    isSorting: false,
-    style,
-    dragHandleStyle,
-    handleDragStart: () => {},
-    handleDragEnd: () => {}
   }
 }

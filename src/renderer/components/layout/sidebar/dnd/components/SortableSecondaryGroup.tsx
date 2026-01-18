@@ -4,7 +4,8 @@ import { SecondaryGroup, Website } from '@/types/website'
 import { SortableWebsiteList } from './SortableWebsiteItem'
 import { DragHandle } from './DragHandle'
 import { useSecondaryGroupDnd } from '../hooks/useSecondaryGroupDnd'
-import { SortableContainer } from '../contexts/DragDropContext'
+import { SortableContainer } from '../../contexts/DragDropContext'
+import { useSidebarLock } from '../../contexts/SidebarLockContextValue'
 
 interface SortableSecondaryGroupProps {
   /** 二级分组数据 */
@@ -47,11 +48,12 @@ const SortableSecondaryGroupComponent: React.FC<SortableSecondaryGroupProps> = (
   className = '',
   isCollapsed = false
 }) => {
+  const { isLocked } = useSidebarLock()
   const { attributes, listeners, setNodeRef, style, dragHandleStyle, isDragging, isOver } =
     useSecondaryGroupDnd({
       id: secondaryGroup.id,
       secondaryGroup,
-      disabled
+      disabled: disabled || isLocked
     })
 
   const isExpanded = secondaryGroup.expanded !== false
@@ -113,8 +115,8 @@ const SortableSecondaryGroupComponent: React.FC<SortableSecondaryGroupProps> = (
           }
         }}
       >
-        {/* 拖拽手柄 - 折叠状态下隐藏 */}
-        {!isCollapsed && (
+        {/* 拖拽手柄 - 折叠状态下隐藏，锁定状态下隐藏 */}
+        {!isCollapsed && !isLocked && (
           <div
             className="mr-2"
             style={dragHandleStyle}
@@ -188,8 +190,8 @@ const SortableSecondaryGroupComponent: React.FC<SortableSecondaryGroupProps> = (
             </SortableContainer>
           )}
 
-          {/* 添加网站按钮 - 折叠状态下隐藏 */}
-          {onAddWebsite && !isCollapsed && (
+          {/* 添加网站按钮 - 折叠状态下隐藏，锁定状态下隐藏 */}
+          {onAddWebsite && !isCollapsed && !isLocked && (
             <button
               className={`
                 w-full
@@ -235,79 +237,6 @@ const SortableSecondaryGroupComponent: React.FC<SortableSecondaryGroupProps> = (
 }
 
 // 使用 memo 包装组件以提高性能
-export const SortableSecondaryGroup = React.memo(
-  SortableSecondaryGroupComponent,
-  (prevProps, nextProps) => {
-    // 自定义比较函数，只在必要时重新渲染
-    // 检查所有可能影响渲染的属性，包括深层对象的比较
-    if (
-      prevProps.secondaryGroup.id !== nextProps.secondaryGroup.id ||
-      prevProps.secondaryGroup.name !== nextProps.secondaryGroup.name ||
-      prevProps.secondaryGroup.expanded !== nextProps.secondaryGroup.expanded ||
-      prevProps.active !== nextProps.active ||
-      prevProps.disabled !== nextProps.disabled ||
-      prevProps.isCollapsed !== nextProps.isCollapsed
-    ) {
-      return false
-    }
-
-    // 深度比较 websites 数组
-    if (prevProps.secondaryGroup.websites.length !== nextProps.secondaryGroup.websites.length) {
-      return false
-    }
-
-    // 检查每个网站的关键属性
-    for (let i = 0; i < prevProps.secondaryGroup.websites.length; i++) {
-      const prevWebsite = prevProps.secondaryGroup.websites[i]
-      const nextWebsite = nextProps.secondaryGroup.websites[i]
-
-      if (
-        prevWebsite.id !== nextWebsite.id ||
-        prevWebsite.name !== nextWebsite.name ||
-        prevWebsite.url !== nextWebsite.url
-      ) {
-        return false
-      }
-    }
-
-    return true
-  }
-)
-
-// 简化版本，用于列表渲染
-export const SimpleSortableSecondaryGroup: React.FC<{
-  id: string
-  name: string
-  isExpanded?: boolean
-  disabled?: boolean
-}> = ({ id, name, isExpanded = true, disabled = false }) => {
-  const { setNodeRef, style, isDragging } = useSecondaryGroupDnd({
-    id,
-    secondaryGroup: {
-      id,
-      name,
-      websites: [],
-      order: 0,
-      primaryGroupId: '',
-      createdAt: 0,
-      updatedAt: 0
-    },
-    disabled
-  })
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`
-        flex items-center p-2 rounded border
-        ${isDragging ? 'opacity-50' : ''}
-      `}
-    >
-      <DragHandle isDragging={isDragging} disabled={disabled} />
-      <Folder className="mr-2 h-4 w-4" />
-      <span className="flex-1">{name}</span>
-      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-    </div>
-  )
-}
+// 移除复杂的自定义比较函数，让 React 使用默认的浅比较
+// 对于大多数场景，默认的浅比较已经足够高效
+export const SortableSecondaryGroup = React.memo(SortableSecondaryGroupComponent)

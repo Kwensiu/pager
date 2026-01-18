@@ -12,6 +12,7 @@ import {
 import { useSettings } from '@/hooks/useSettings'
 import { ConfirmDialog } from '@/components/features/ConfirmDialog'
 import { useI18n } from '@/core/i18n/useI18n'
+import { useSidebarLock } from '../../contexts/SidebarLockContextValue'
 
 interface SortableWebsiteItemProps {
   /** 网站数据 */
@@ -50,6 +51,7 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
 }) => {
   const { settings } = useSettings()
   const { t } = useI18n()
+  const { isLocked } = useSidebarLock()
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
 
   const { attributes, listeners, setNodeRef, style, dragHandleStyle, isDragging, isOver } =
@@ -58,7 +60,7 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
       website,
       secondaryGroupId,
       primaryGroupId,
-      disabled
+      disabled: disabled || isLocked
     })
 
   const performNavigation = useCallback(async (): Promise<void> => {
@@ -160,8 +162,8 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
               <div className="absolute inset-0 bg-primary/10 rounded-md pointer-events-none animate-pulse" />
             )}
 
-            {/* 拖拽手柄 - 折叠状态下隐藏 */}
-            {showDragHandle && !disabled && !isCollapsed && (
+            {/* 拖拽手柄 - 折叠状态下隐藏，锁定状态下隐藏 */}
+            {showDragHandle && !disabled && !isCollapsed && !isLocked && (
               <div
                 className="mr-1.5"
                 style={dragHandleStyle}
@@ -248,37 +250,6 @@ export const SortableWebsiteItem = memo(SortableWebsiteItemComponent, (prevProps
     prevProps.isCollapsed === nextProps.isCollapsed
   )
 })
-
-// 简化版本，用于列表渲染
-export const SimpleSortableWebsiteItem: React.FC<{
-  id: string
-  name: string
-  url: string
-  secondaryGroupId: string
-  disabled?: boolean
-}> = ({ id, name, url, secondaryGroupId, disabled = false }) => {
-  const { setNodeRef, style, isDragging } = useWebsiteDnd({
-    id,
-    website: { id, name, url, order: 0, createdAt: 0, updatedAt: 0 },
-    secondaryGroupId,
-    disabled
-  })
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`
-        flex items-center p-2 rounded
-        ${isDragging ? 'opacity-50' : ''}
-      `}
-    >
-      <DragHandle isDragging={isDragging} disabled={disabled} size="sm" />
-      <Favicon url={url} className="mr-2 h-6 w-6" />
-      <span className="flex-1 text-sm truncate">{name}</span>
-    </div>
-  )
-}
 
 // 用于网站列表的容器组件
 interface SortableWebsiteListProps {

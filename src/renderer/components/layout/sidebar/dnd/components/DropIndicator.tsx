@@ -13,6 +13,8 @@ interface DropIndicatorProps {
   showArrow?: boolean
   /** 动画效果 */
   animated?: boolean
+  /** 预设类型 */
+  variant?: 'default' | 'secondary' | 'website'
 }
 
 export const DropIndicator: React.FC<DropIndicatorProps> = ({
@@ -21,8 +23,32 @@ export const DropIndicator: React.FC<DropIndicatorProps> = ({
   type = 'insert',
   className = '',
   showArrow = true,
-  animated = true
+  animated = true,
+  variant = 'default'
 }) => {
+  // 根据预设类型设置默认属性
+  const getDefaultProps = (): {
+    position: 'top' | 'bottom' | 'left' | 'right'
+    className: string
+    showArrow: boolean
+  } => {
+    switch (variant) {
+      case 'secondary':
+        return { position: 'bottom', className: 'rounded-full', showArrow }
+      case 'website':
+        return { position: 'bottom', className: 'rounded-sm', showArrow: false }
+      default:
+        return { position, className: '', showArrow }
+    }
+  }
+
+  const {
+    position: finalPosition,
+    className: variantClassName,
+    showArrow: finalShowArrow
+  } = getDefaultProps()
+  const finalClassName = `${variantClassName} ${className}`.trim()
+
   if (!isActive && type === 'insert') {
     return null
   }
@@ -58,11 +84,11 @@ export const DropIndicator: React.FC<DropIndicatorProps> = ({
       className={`
         drop-indicator
         absolute
-        ${positionClasses[position]}
+        ${positionClasses[finalPosition]}
         ${typeClasses[type]}
         ${animated ? 'transition-all duration-200' : ''}
         ${isActive ? 'opacity-100' : 'opacity-0'}
-        ${className}
+        ${finalClassName}
       `}
       role="presentation"
       aria-hidden="true"
@@ -71,21 +97,21 @@ export const DropIndicator: React.FC<DropIndicatorProps> = ({
       <div
         className={`
           absolute
-          ${positionClasses[position]}
+          ${positionClasses[finalPosition]}
           ${type === 'insert' ? 'bg-primary' : 'bg-primary/20'}
           ${animated && isActive ? 'animate-pulse' : ''}
         `}
       />
 
       {/* 箭头指示器 */}
-      {showArrow && type === 'insert' && isActive && (
+      {finalShowArrow && showArrow && type === 'insert' && isActive && (
         <div
           className={`
             absolute
-            ${arrowPosition[position]}
+            ${arrowPosition[finalPosition]}
             w-0 h-0
             border-4 border-transparent
-            ${arrowDirection[position]}
+            ${arrowDirection[finalPosition]}
           `}
         />
       )}
@@ -95,7 +121,7 @@ export const DropIndicator: React.FC<DropIndicatorProps> = ({
         <div
           className={`
             absolute
-            ${positionClasses[position]}
+            ${positionClasses[finalPosition]}
             bg-primary/10
             blur-sm
             ${type === 'insert' ? 'animate-ping' : ''}
@@ -103,53 +129,5 @@ export const DropIndicator: React.FC<DropIndicatorProps> = ({
         />
       )}
     </div>
-  )
-}
-
-// 用于二级分组的放置指示器
-export const SecondaryGroupDropIndicator: React.FC<Omit<DropIndicatorProps, 'position'>> = (
-  props
-) => {
-  return (
-    <DropIndicator
-      {...props}
-      position="bottom"
-      className={`rounded-full ${props.className || ''}`}
-    />
-  )
-}
-
-// 用于网站的放置指示器
-export const WebsiteDropIndicator: React.FC<Omit<DropIndicatorProps, 'position'>> = (props) => {
-  return (
-    <DropIndicator
-      {...props}
-      position="bottom"
-      className={`rounded-sm ${props.className || ''}`}
-      showArrow={false}
-    />
-  )
-}
-
-// 简化版本
-export const SimpleDropIndicator: React.FC<{ isActive?: boolean }> = ({ isActive = false }) => {
-  if (!isActive) {
-    return null
-  }
-
-  return (
-    <div
-      className="
-        absolute
-        bottom-0
-        left-0
-        right-0
-        h-0.5
-        bg-primary
-        animate-pulse
-      "
-      role="presentation"
-      aria-hidden="true"
-    />
   )
 }

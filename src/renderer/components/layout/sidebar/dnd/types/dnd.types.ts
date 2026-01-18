@@ -55,6 +55,15 @@ export interface DragDropConfig {
   keyboardSortingDistance: number
 }
 
+export interface DragData {
+  type: 'secondaryGroup' | 'website'
+  secondaryGroup?: SecondaryGroup
+  website?: Website
+  secondaryGroupId?: string
+  primaryGroupId?: string
+  isPrimaryGroupWebsite?: boolean
+}
+
 export const defaultDragDropConfig: DragDropConfig = {
   animationDuration: 200,
   dragDelay: 0,

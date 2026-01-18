@@ -124,7 +124,22 @@ export function useSidebarLogic({
 
       if (savedPrimaryGroups.length > 0) {
         setPrimaryGroups(savedPrimaryGroups)
-        setInternalActivePrimaryGroup(savedPrimaryGroups[0])
+        // 从 localStorage 读取上次选择的活跃分组
+        try {
+          const savedActiveGroupId = localStorage.getItem('activePrimaryGroupId')
+          if (savedActiveGroupId) {
+            const savedGroup = savedPrimaryGroups.find((g) => g.id === savedActiveGroupId)
+            if (savedGroup) {
+              setInternalActivePrimaryGroup(savedGroup)
+            } else {
+              setInternalActivePrimaryGroup(savedPrimaryGroups[0])
+            }
+          } else {
+            setInternalActivePrimaryGroup(savedPrimaryGroups[0])
+          }
+        } catch {
+          setInternalActivePrimaryGroup(savedPrimaryGroups[0])
+        }
       } else if (isFirstRun()) {
         const defaultGroups = getDefaultGroups()
         await storageService.setPrimaryGroups(defaultGroups)
@@ -165,6 +180,12 @@ export function useSidebarLogic({
   // 设置活动分类
   const setActivePrimaryGroup = useCallback((group: PrimaryGroup | null) => {
     setInternalActivePrimaryGroup(group)
+    // 保存活跃分组 ID 到 localStorage
+    if (group) {
+      localStorage.setItem('activePrimaryGroupId', group.id)
+    } else {
+      localStorage.removeItem('activePrimaryGroupId')
+    }
   }, [])
 
   // 切换二级分组展开状态
@@ -344,10 +365,13 @@ export function useSidebarLogic({
     dialogManagement.closeConfirmDeleteWebsite()
   }
 
-  const switchPrimaryGroup = useCallback((primaryGroup: PrimaryGroup) => {
-    setInternalActivePrimaryGroup(primaryGroup)
-    setShowSettings(false)
-  }, [])
+  const switchPrimaryGroup = useCallback(
+    (primaryGroup: PrimaryGroup) => {
+      setActivePrimaryGroup(primaryGroup)
+      setShowSettings(false)
+    },
+    [setActivePrimaryGroup]
+  )
 
   // 处理右键菜单事件
   const handleContextMenu = (e: React.MouseEvent, secondaryGroupId: string): void => {
@@ -485,9 +509,9 @@ export function useSidebarLogic({
     if (activePrimaryGroup?.id === groupId) {
       const otherGroups = primaryGroups.filter((g) => g.id !== groupId)
       if (otherGroups.length > 0) {
-        setInternalActivePrimaryGroup(otherGroups[0])
+        setActivePrimaryGroup(otherGroups[0])
       } else {
-        setInternalActivePrimaryGroup(null)
+        setActivePrimaryGroup(null)
       }
     }
 
@@ -513,7 +537,7 @@ export function useSidebarLogic({
 
     // 如果更新的是当前激活的分类，更新激活状态
     if (activePrimaryGroup?.id === updatedGroup.id) {
-      setInternalActivePrimaryGroup(updatedGroup)
+      setActivePrimaryGroup(updatedGroup)
     }
 
     dialogManagement.closePrimaryGroupEditDialog()

@@ -1,11 +1,11 @@
-import { Website, SecondaryGroup } from '@/types/website'
+import { PrimaryGroup, SecondaryGroup, Website } from '@/types/website'
 
 /**
- * 排序工具函数
+ * 统一的排序工具，消除重复的排序逻辑
  */
 
 /**
- * 比较两个项目的顺序
+ * 通用的排序比较函数
  */
 export function compareOrder(a: { order?: number }, b: { order?: number }): number {
   const orderA = a.order ?? 0
@@ -35,31 +35,6 @@ export function recalculateOrders<T extends { order?: number }>(
 }
 
 /**
- * 在指定位置插入项目并重新计算顺序
- */
-export function insertItemAndRecalculate<T extends { order?: number }>(
-  items: T[],
-  newItem: T,
-  targetIndex: number
-): T[] {
-  const newItems = [...items]
-
-  if (targetIndex >= newItems.length) {
-    // 插入到最后
-    newItems.push(newItem)
-  } else if (targetIndex <= 0) {
-    // 插入到最前
-    newItems.unshift(newItem)
-  } else {
-    // 插入到中间
-    newItems.splice(targetIndex, 0, newItem)
-  }
-
-  // 重新计算所有项目的顺序
-  return recalculateOrders(newItems)
-}
-
-/**
  * 移动项目到新位置并重新计算顺序
  */
 export function moveItemAndRecalculate<T extends { order?: number; id: string }>(
@@ -84,38 +59,34 @@ export function moveItemAndRecalculate<T extends { order?: number; id: string }>
     newItems.splice(targetIndex, 0, movedItem)
   }
 
-  // 重新计算所有项目的顺序
   return recalculateOrders(newItems)
 }
 
 /**
- * 计算插入位置的 order 值
+ * 专门用于PrimaryGroup的排序工具
  */
-export function calculateInsertOrder(
-  prevItem: { order?: number } | null,
-  nextItem: { order?: number } | null,
-  defaultOrder = 0
-): number {
-  if (!prevItem && !nextItem) {
-    return defaultOrder
-  }
+export const primaryGroupSortUtils = {
+  getSorted: (groups: PrimaryGroup[]): PrimaryGroup[] => getSortedArray(groups),
+  moveItem: (groups: PrimaryGroup[], groupId: string, targetIndex: number): PrimaryGroup[] =>
+    moveItemAndRecalculate(groups, groupId, targetIndex)
+}
 
-  if (!prevItem && nextItem) {
-    // 插入到第一个位置
-    return (nextItem.order ?? 0) - 100
-  }
+/**
+ * 专门用于SecondaryGroup的排序工具
+ */
+export const secondaryGroupSortUtils = {
+  getSorted: (groups: SecondaryGroup[]): SecondaryGroup[] => getSortedArray(groups),
+  moveItem: (groups: SecondaryGroup[], groupId: string, targetIndex: number): SecondaryGroup[] =>
+    moveItemAndRecalculate(groups, groupId, targetIndex)
+}
 
-  if (prevItem && !nextItem) {
-    // 插入到最后一个位置
-    return (prevItem.order ?? 0) + 100
-  }
-
-  if (prevItem && nextItem) {
-    // 插入到两个项目之间
-    return Math.floor(((prevItem.order ?? 0) + (nextItem.order ?? 0)) / 2)
-  }
-
-  return defaultOrder
+/**
+ * 专门用于Website的排序工具
+ */
+export const websiteSortUtils = {
+  getSorted: (websites: Website[]): Website[] => getSortedArray(websites),
+  moveItem: (websites: Website[], websiteId: string, targetIndex: number): Website[] =>
+    moveItemAndRecalculate(websites, websiteId, targetIndex)
 }
 
 /**
@@ -148,57 +119,31 @@ export function needsRebalancing<T extends { order?: number }>(
 }
 
 /**
- * 网站排序相关工具函数
+ * 计算插入位置的 order 值
  */
-export const websiteSortUtils = {
-  /**
-   * 获取排序后的网站列表
-   */
-  getSortedWebsites(websites: Website[]): Website[] {
-    return getSortedArray(websites)
-  },
-
-  /**
-   * 移动网站到新位置
-   */
-  moveWebsite(websites: Website[], websiteId: string, targetIndex: number): Website[] {
-    return moveItemAndRecalculate(websites, websiteId, targetIndex)
-  },
-
-  /**
-   * 插入新网站
-   */
-  insertWebsite(websites: Website[], newWebsite: Website, targetIndex: number): Website[] {
-    return insertItemAndRecalculate(websites, newWebsite, targetIndex)
+export function calculateInsertOrder(
+  prevItem: { order?: number } | null,
+  nextItem: { order?: number } | null,
+  defaultOrder = 0
+): number {
+  if (!prevItem && !nextItem) {
+    return defaultOrder
   }
-}
 
-/**
- * 二级分组排序相关工具函数
- */
-export const secondaryGroupSortUtils = {
-  /**
-   * 获取排序后的二级分组列表
-   */
-  getSortedGroups(groups: SecondaryGroup[]): SecondaryGroup[] {
-    return getSortedArray(groups)
-  },
-
-  /**
-   * 移动二级分组到新位置
-   */
-  moveGroup(groups: SecondaryGroup[], groupId: string, targetIndex: number): SecondaryGroup[] {
-    return moveItemAndRecalculate(groups, groupId, targetIndex)
-  },
-
-  /**
-   * 插入新二级分组
-   */
-  insertGroup(
-    groups: SecondaryGroup[],
-    newGroup: SecondaryGroup,
-    targetIndex: number
-  ): SecondaryGroup[] {
-    return insertItemAndRecalculate(groups, newGroup, targetIndex)
+  if (!prevItem && nextItem) {
+    // 插入到第一个位置
+    return (nextItem.order ?? 0) - 100
   }
+
+  if (prevItem && !nextItem) {
+    // 插入到最后一个位置
+    return (prevItem.order ?? 0) + 100
+  }
+
+  if (prevItem && nextItem) {
+    // 插入到两个项目之间
+    return Math.floor(((prevItem.order ?? 0) + (nextItem.order ?? 0)) / 2)
+  }
+
+  return defaultOrder
 }

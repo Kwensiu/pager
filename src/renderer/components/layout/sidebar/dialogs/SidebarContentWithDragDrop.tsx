@@ -1,7 +1,7 @@
 import React from 'react'
 import { SidebarGroup, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/ui/sidebar'
 import { useSidebar } from '@/ui/sidebar.types'
-import { Plus } from 'lucide-react'
+import { Plus, Lock, Unlock } from 'lucide-react'
 import { PrimaryGroup, Website, SecondaryGroup } from '@/types/website'
 import {
   ContextMenu,
@@ -11,13 +11,14 @@ import {
 } from '@/ui/context-menu'
 
 // 拖拽相关导入
-import { DragDropProvider, SortableContainer } from '../dnd/contexts/DragDropContext'
+import { DragDropProvider, SortableContainer } from '../contexts/DragDropContext'
 import { SortableSecondaryGroup } from '../dnd/components/SortableSecondaryGroup'
 import { SortableWebsiteItem } from '../dnd/components/SortableWebsiteItem'
 import { SortableEmptyPlaceholder } from '../dnd/components/SortableEmptyPlaceholder'
 import { getSortedSecondaryGroups } from '../dnd/utils/migrationUtils'
 import { DragEndResult } from '../dnd/types/dnd.types'
 import { SortingService } from '../dnd/services/sortingService'
+import { useSidebarLock } from '../contexts/SidebarLockContextValue'
 
 export interface SidebarContentWithDragDropProps {
   activePrimaryGroup: PrimaryGroup | null
@@ -57,6 +58,7 @@ const DragDropSidebarContentInner: React.FC<SidebarContentWithDragDropProps> = (
   collapsedSidebarMode = 'all'
 }) => {
   const { state } = useSidebar()
+  const { isLocked, toggleLock } = useSidebarLock()
   const isCollapsed = state === 'collapsed'
 
   if (!activePrimaryGroup) {
@@ -131,7 +133,20 @@ const DragDropSidebarContentInner: React.FC<SidebarContentWithDragDropProps> = (
             {/* 展开状态下的完整显示 */}
             {/* 一级分类下的网站列表 - 即使为空也渲染，作为拖拽目标 */}
             <div className="mb-1">
-              <div className="text-xs font-medium text-foreground mb-2 pl-1">未分组网站</div>
+              <div className="flex items-center justify-between text-xs font-medium text-foreground mb-2 pl-1">
+                <span>未分组网站</span>
+                <button
+                  onClick={toggleLock}
+                  className={`
+                    p-1 rounded hover:bg-accent/50 transition-colors
+                    ${isLocked ? 'text-primary' : 'text-muted-foreground'}
+                  `}
+                  title={isLocked ? '解锁侧边栏' : '锁定侧边栏'}
+                  aria-label={isLocked ? '解锁侧边栏' : '锁定侧边栏'}
+                >
+                  {isLocked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                </button>
+              </div>
               <div className="space-y-1">
                 <SortableContainer items={effectivePrimaryGroupWebsiteIds}>
                   {primaryGroupWebsites.map((website) => (
@@ -200,8 +215,8 @@ const DragDropSidebarContentInner: React.FC<SidebarContentWithDragDropProps> = (
           </>
         )}
 
-        {/* 添加网站到主要分组的按钮 - 折叠状态下隐藏 */}
-        {!isCollapsed && (
+        {/* 添加网站到主要分组的按钮 - 折叠状态下隐藏，锁定状态下隐藏 */}
+        {!isCollapsed && !isLocked && (
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={(e) => {
@@ -233,7 +248,14 @@ const SidebarContentWithDragDrop: React.FC<SidebarContentWithDragDropProps> = (p
     onWebsiteReorder
   } = props
 
+  const { isLocked } = useSidebarLock()
+
   const handleDragEnd = (result: DragEndResult): void => {
+    // 如果侧边栏被锁定，不处理拖拽
+    if (isLocked) {
+      return
+    }
+
     // 使用排序服务处理拖拽结果
     if (!result || !activePrimaryGroup) {
       return

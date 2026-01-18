@@ -1,7 +1,6 @@
 import React from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useDragDrop } from '../contexts/DragDropContext'
 
 interface SortableEmptyPlaceholderProps {
   /** 占位符ID */
@@ -34,11 +33,8 @@ export const SortableEmptyPlaceholder: React.FC<SortableEmptyPlaceholderProps> =
       }
     })
 
-  // 获取当前的拖拽状态
-  const { state: dragState } = useDragDrop()
-
-  // 只有当当前拖拽的是网站类型时，才在空占位符上显示放置指示器
-  const shouldShowDropIndicator = isOver && dragState.dragType === 'website'
+  // 简化拖拽状态检查，移除对 context state 的依赖
+  const shouldShowDropIndicator = isOver
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),

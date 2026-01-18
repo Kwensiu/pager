@@ -510,9 +510,16 @@ export const storeService = {
 
   // 更新设置
   async updateSettings(updates: Partial<Settings>) {
-    const settings = await this.getSettings()
-    const s = await getStore()
-    s.set('settings', { ...settings, ...updates })
+    try {
+      const settings = await this.getSettings()
+      const s = await getStore()
+      const updatedSettings = { ...settings, ...updates }
+      s.set('settings', updatedSettings)
+      return updatedSettings
+    } catch (error) {
+      console.error('Failed to update settings:', error)
+      throw error
+    }
   },
 
   // ===== 快捷键相关 =====

@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS, Transform } from '@dnd-kit/utilities'
 import type { DraggableAttributes } from '@dnd-kit/core'
 import { Website } from '@/types/website'
-import { useDragDrop } from '../contexts/DragDropContext'
+import { getDraggableStyle, getWebsiteDragHandleStyle } from '../utils/styleUtils'
 
 interface UseWebsiteDndProps {
   id: string
@@ -63,33 +63,17 @@ export function useWebsiteDnd({
     }
   })
 
-  // 获取当前的拖拽状态
-  const { state: dragState } = useDragDrop()
-
   // 计算是否应该显示放置指示器
-  // 只有当当前拖拽的是网站类型时，才在网站按钮上显示放置指示器
-  const shouldShowDropIndicator = isOver && dragState.dragType === 'website'
+  // 使用 @dnd-kit 内置的状态，简化逻辑
+  const shouldShowDropIndicator = isOver
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || undefined,
-    opacity: isDragging ? 0.5 : 1,
-    position: 'relative' as const,
-    zIndex: isDragging ? 1000 : 'auto',
-    cursor: isDragging ? 'grabbing' : 'pointer'
-  }
+  const style: React.CSSProperties = getDraggableStyle(
+    CSS.Transform.toString(transform),
+    transition,
+    isDragging
+  )
 
-  const dragHandleStyle: React.CSSProperties = {
-    cursor: isDragging ? 'grabbing' : 'grab',
-    opacity: isDragging ? 1 : 0.4,
-    transition: 'opacity 0.2s ease',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '16px',
-    height: '16px',
-    marginRight: '6px'
-  }
+  const dragHandleStyle: React.CSSProperties = getWebsiteDragHandleStyle(isDragging)
 
   const handleDragStart = useCallback(() => {
     // 可以在这里添加自定义逻辑
@@ -122,47 +106,6 @@ export function useWebsiteDnd({
     // 方法
     handleDragStart,
     handleDragEnd
-  }
-}
-
-// 简化版本，用于不需要完整功能的场景
-export function useBasicWebsiteDnd(id: string, disabled = false): UseWebsiteDndReturn {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-    disabled
-  })
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1
-  }
-
-  const dragHandleStyle: React.CSSProperties = {
-    cursor: isDragging ? 'grabbing' : 'grab',
-    opacity: isDragging ? 1 : 0.4,
-    transition: 'opacity 0.2s ease',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '16px',
-    height: '16px',
-    marginRight: '6px'
-  }
-
-  return {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform: CSS.Transform.toString(transform),
-    transition,
-    isDragging,
-    isOver: false,
-    isSorting: false,
-    style,
-    dragHandleStyle,
-    handleDragStart: () => {},
-    handleDragEnd: () => {}
   }
 }
 
