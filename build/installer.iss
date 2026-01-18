@@ -1,8 +1,8 @@
 ; Inno Setup 安装脚本
 ; 用于 Pager 应用程序的 Windows 安装程序
 
-#define MyAppName "Pager"
-#define MyAppVersion "0.1.1"
+#define MyAppName GetEnv('APP_NAME')
+#define MyAppVersion GetEnv('APP_VERSION')
 #define MyAppPublisher "Kwensiu"
 #define MyAppURL "https://github.com/Kwensiu/Pager"
 #define MyAppExeName "Pager.exe"
