@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { existsSync, readFileSync, mkdirSync, promises as fs } from 'fs'
 import { app, BrowserWindow, shell } from 'electron'
 
 // 动态导入服务以避免循环依赖
@@ -92,7 +92,7 @@ function getSavedWindowState(): WindowState | null {
 /**
  * 保存窗口状态
  */
-function saveWindowState(window: BrowserWindow): void {
+async function saveWindowState(window: BrowserWindow): Promise<void> {
   try {
     const bounds = window.getBounds()
     const state: WindowState = {
@@ -111,7 +111,8 @@ function saveWindowState(window: BrowserWindow): void {
       mkdirSync(userDataPath, { recursive: true })
     }
 
-    writeFileSync(filePath, JSON.stringify(state), 'utf-8')
+    // 使用异步写入避免阻塞
+    await fs.writeFile(filePath, JSON.stringify(state), 'utf-8')
   } catch (error) {
     console.error('Failed to save window state:', error)
   }
@@ -157,6 +158,13 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
     y: savedState?.y ?? undefined,
     show: false,
     autoHideMenuBar: true,
+    movable: true,
+    resizable: true,
+    minimizable: true,
+    maximizable: true,
+    fullscreenable: true,
+    frame: true,
+    transparent: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: preloadPath,
@@ -166,7 +174,9 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
       webviewTag: true,
       // 启用网络相关功能
       allowRunningInsecureContent: true,
-      experimentalFeatures: true
+      experimentalFeatures: true,
+      // 性能优化配置
+      backgroundThrottling: false  // 防止后台节流
     }
   })
 
@@ -179,26 +189,48 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
     mainWindow.show()
   })
 
-  mainWindow.on('resize', () => {
-    // 通知渲染进程窗口大小变化
-    mainWindow.webContents.send('window-resized')
-    // 保存窗口状态
-    saveWindowState(mainWindow)
+  // 简化的防抖函数
+let saveTimeout: NodeJS.Timeout | null = null
+let resizeNotifyTimeout: NodeJS.Timeout | null = null
+
+const debouncedSaveWindowState = (window: BrowserWindow, delay: number = 500): void => {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout)
+  }
+  saveTimeout = setTimeout(async () => {
+    await saveWindowState(window)
+  }, delay)
+}
+
+const debouncedNotifyResize = (window: BrowserWindow, delay: number = 200): void => {
+  if (resizeNotifyTimeout) {
+    clearTimeout(resizeNotifyTimeout)
+  }
+  resizeNotifyTimeout = setTimeout(() => {
+    window.webContents.send('window-resized')
+  }, delay)
+}
+
+mainWindow.on('resize', () => {
+    // 防抖通知渲染进程窗口大小变化
+    debouncedNotifyResize(mainWindow)
+    // 防抖保存窗口状态，延迟更长以减少频率
+    debouncedSaveWindowState(mainWindow)
   })
 
   mainWindow.on('move', () => {
-    // 保存窗口状态
-    saveWindowState(mainWindow)
+    // 移动事件不保存状态，避免拖动卡顿
+    // 只在窗口关闭时保存最终位置
   })
 
-  mainWindow.on('maximize', () => {
-    // 保存窗口状态
-    saveWindowState(mainWindow)
+  mainWindow.on('maximize', async () => {
+    // 立即保存窗口状态（最大化变化不频繁）
+    await saveWindowState(mainWindow)
   })
 
-  mainWindow.on('unmaximize', () => {
-    // 保存窗口状态
-    saveWindowState(mainWindow)
+  mainWindow.on('unmaximize', async () => {
+    // 立即保存窗口状态
+    await saveWindowState(mainWindow)
   })
 
   // 最小化事件处理
@@ -228,6 +260,9 @@ export async function createWindow(): Promise<Electron.BrowserWindow> {
   // 关闭事件处理
   mainWindow.on('close', async (event: Electron.Event) => {
     try {
+      // 保存最终窗口状态
+      await saveWindowState(mainWindow)
+      
       const storeService = await getStoreService()
       const settings = await storeService.getSettings()
 

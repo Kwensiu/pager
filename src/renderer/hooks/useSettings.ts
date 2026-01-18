@@ -5,6 +5,7 @@ import { ExtensionIsolationLevel, ExtensionRiskLevel } from '../../shared/types/
 
 const defaultSettings: Settings = {
   theme: 'light',
+  language: 'zh',
   showDebugOptions: false,
   isAutoLaunch: false,
   isMenuVisible: true,
@@ -32,11 +33,33 @@ const defaultSettings: Settings = {
     clearSessionCache: true,
     clearDefaultSession: true
   },
-  allowLocalFileAccess: false, // 默认关闭本地文件访问
-  // 快速跳转网站设置
-  quickResetWebsite: true, // 默认开启快速跳转网站功能
-  resetWebsiteConfirmDialog: true, // 默认开启确认弹窗
-  autoCloseSettingsOnWebsiteClick: true // 默认开启点击网站时自动关闭设置
+  allowLocalFileAccess: false,
+  quickResetWebsite: true,
+  resetWebsiteConfirmDialog: true,
+  autoCloseSettingsOnWebsiteClick: true,
+  collapsedSidebarMode: 'all',
+  autoCheckUpdates: true,
+  minimizeToTray: true,
+  windowAlwaysOnTop: false,
+  windowMiniMode: false,
+  trayEnabled: true,
+  trayShowNotifications: true,
+  memoryOptimizerEnabled: false,
+  enableGarbageCollection: true,
+  enableEmergencyCleanup: true,
+  clearInactiveSessionCache: false,
+  clearInactiveCookies: false,
+  clearInactiveLocalStorage: false,
+  proxyEnabled: false,
+  proxyRules: '',
+  proxySoftwareOnly: false,
+  updateCheckInterval: 86400000,
+  autoRestartOnCrash: true,
+  shortcutsEnabled: true,
+  shortcutAlwaysOnTop: 'CmdOrCtrl+Shift+T',
+  shortcutMiniMode: 'CmdOrCtrl+Shift+M',
+  memoryCleanInterval: 300000,
+  maxInactiveTime: 1800000
 }
 
 export function useSettings(): {

@@ -42,6 +42,11 @@ app.whenReady().then(async () => {
   app.commandLine.appendSwitch('disable-blink-features', 'AutomationControlled')
   // 禁用站点隔离
   app.commandLine.appendSwitch('disable-features', 'IsolateOrigins,site-per-process')
+  // GPU 性能优化（低风险，现代显卡都支持）
+  app.commandLine.appendSwitch('enable-zero-copy')
+  app.commandLine.appendSwitch('enable-gpu-rasterization')
+  app.commandLine.appendSwitch('enable-native-gpu-memory-buffers')
+  app.commandLine.appendSwitch('enable-oop-rasterization')
   // 设置 App User Model ID for Windows
   if (process.platform === 'win32') {
     app.setAppUserModelId('com.pager.ks')

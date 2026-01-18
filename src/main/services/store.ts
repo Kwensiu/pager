@@ -567,9 +567,36 @@ export const storeService = {
 
       // 检查目录是否存在
       if (fsSync.existsSync(userDataPath)) {
+        // 关闭所有 WebView 会话，释放文件锁定
+        const { session } = await import('electron')
+        const sessions = session.defaultSession
+        if (sessions) {
+          try {
+            await sessions.clearStorageData()
+            await sessions.clearCache()
+            console.log('Cleared session storage and cache')
+          } catch (error) {
+            console.warn('Failed to clear session data:', error)
+          }
+        }
+
         // 递归删除整个用户数据目录
-        await fs.rm(userDataPath, { recursive: true, force: true })
-        console.log(`Successfully removed user data directory: ${userDataPath}`)
+        // 使用 maxRetries 和 retryDelay 来处理文件被占用的情况
+        const maxRetries = 3
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            await fs.rm(userDataPath, { recursive: true, force: true })
+            console.log(`Successfully removed user data directory: ${userDataPath}`)
+            break
+          } catch (error) {
+            if (attempt === maxRetries) {
+              throw error
+            }
+            console.warn(`Attempt ${attempt} failed, retrying...`, error)
+            // 等待一段时间后重试
+            await new Promise((resolve) => setTimeout(resolve, 500))
+          }
+        }
 
         // 重新创建空目录，确保应用能正常启动
         await fs.mkdir(userDataPath, { recursive: true })
