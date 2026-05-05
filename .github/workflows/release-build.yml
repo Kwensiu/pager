@@ -98,4 +98,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pnpm build && pnpm exec electron-builder --win --publish always -c.publish.releaseType=release
+          pnpm build && pnpm exec electron-builder --win --publish always --config.publish.releaseType=release
