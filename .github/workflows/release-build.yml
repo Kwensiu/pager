@@ -97,5 +97,7 @@ jobs:
       - name: Build application
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EP_DRAFT: false
+          EP_PRE_RELEASE: ${{ steps.extract_version.outputs.prerelease || steps.set_version.outputs.prerelease || 'false' }}
         run: |
           pnpm build && pnpm exec electron-builder --win --publish always
