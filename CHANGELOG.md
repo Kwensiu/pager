@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.2](https://github.com/Kwensiu/Pager/compare/v0.3.1...v0.3.2) (2026-05-05)
+
+
+### Bug Fixes
+
+* **ci:** correct electron-builder releaseType flag ([197b2f9](https://github.com/Kwensiu/Pager/commit/197b2f988c18000366e2e7fac838dddeacbe31a7))
+* **ci:** force release publish type for release build ([4f56dc3](https://github.com/Kwensiu/Pager/commit/4f56dc30440b5aed271fe65037ab3c560b1278bf))
+* **ci:** publish release assets to existing release ([152dad9](https://github.com/Kwensiu/Pager/commit/152dad90719ef22d4cfc425b35636fcdf525d345))
+* **ci:** trigger release build from published release ([6b95296](https://github.com/Kwensiu/Pager/commit/6b9529609cbacd58e7924e242102a308dddab5fc))
+
 ## [0.3.1](https://github.com/Kwensiu/Pager/compare/v0.3.0...v0.3.1) (2026-05-05)
 
 
