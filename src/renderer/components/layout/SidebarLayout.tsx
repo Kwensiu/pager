@@ -348,9 +348,7 @@ const SidebarLayoutInner: React.FC<SidebarLayoutInnerProps> = ({
   )
 }
 
-export default function SidebarLayout({
-  children
-}: SidebarLayoutProps): React.ReactElement {
+export default function SidebarLayout({ children }: SidebarLayoutProps): React.ReactElement {
   // 使用 useSettings hook 管理设置
   const { settings } = useSettings()
   const collapsedSidebarMode = settings.collapsedSidebarMode

@@ -195,11 +195,7 @@ const SortableWebsiteItemComponent: React.FC<SortableWebsiteItemProps> = ({
 
             {/* 网站图标 */}
             <div className={`${isCollapsed ? '' : 'mr-2'} flex-shrink-0`}>
-              <Favicon
-                url={website.favicon || ''}
-                className="h-6 w-6"
-                fetchMode="display-only"
-              />
+              <Favicon url={website.favicon || ''} className="h-6 w-6" fetchMode="display-only" />
             </div>
 
             {/* 网站名称 - 折叠状态下隐藏 */}

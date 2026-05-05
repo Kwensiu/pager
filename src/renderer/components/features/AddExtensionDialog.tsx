@@ -11,6 +11,8 @@ import {
   DialogTitle
 } from '@/ui/dialog'
 import { useI18n } from '@/core/i18n/useI18n'
+import { useSettings } from '@/hooks/useSettings'
+import { OverlayScrollArea } from '@/ui/overlay-scroll-area'
 
 interface AddExtensionDialogProps {
   open: boolean
@@ -31,6 +33,7 @@ export function AddExtensionDialog({
   onAdd
 }: AddExtensionDialogProps): JSX.Element {
   const { t } = useI18n()
+  const { settings } = useSettings()
   const [selectedPath, setSelectedPath] = useState<string>('')
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<{
@@ -218,7 +221,13 @@ export function AddExtensionDialog({
           <DialogDescription>{t('extensions.addExtensionDescription')}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4 overflow-y-auto flex-1">
+        <OverlayScrollArea
+          className="flex-1 min-h-0"
+          viewportClassName="space-y-4 py-4 pr-2"
+          scrollbarSize={Math.max(6, Math.min(14, settings.sidebarScrollbarSize ?? 8))}
+          scrollbarVisibility={settings.sidebarScrollbarVisibility ?? 'hover'}
+          thumbClassName="bg-muted-foreground/20 hover:bg-muted-foreground/40"
+        >
           {/* 安装模式选择 */}
           <div className="space-y-2">
             <Label>{t('extensions.installMode')}</Label>
@@ -354,7 +363,7 @@ export function AddExtensionDialog({
               )}
             </div>
           )}
-        </div>
+        </OverlayScrollArea>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

@@ -11,20 +11,24 @@
 ## 本期保留（必须做）
 
 1. `storeSchemaVersion`
+
 - 初始化写入 `1`。
 - 后续结构变化按 `vN -> vN+1` 追加。
 - 本期不支持降级运行：检测到旧版本读取更高 `storeSchemaVersion` 时，直接退出（不允许写入）。
 
 2. 一次性桥接（localStorage -> electron-store）
+
 - 渲染层启动时上报历史键。
 - 冲突规则固定：`electron-store` 优先，仅在主存储缺值时回填 bridge 值。
 
 3. 最小迁移执行器
+
 - 启动顺序：先 bridge，再 migrate。
 - 主进程等待 bridge 最长 3 秒；超时按 bridge 失败处理并继续 migrate。
 - 迁移函数保持幂等。
 
 4. 最小备份与回滚
+
 - 每次迁移前做 1 份全量快照。
 - 快照最小键集合：`primaryGroups`、`settings`、`windowState`、`lastActiveWebsiteId`、`shortcuts`、`storeSchemaVersion`。
 - 迁移失败时回滚该快照并提示用户。

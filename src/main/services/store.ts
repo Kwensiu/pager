@@ -56,6 +56,8 @@ async function getStore(): Promise<ElectronStore> {
           language: 'zh',
           minimizeToTray: 'exit',
           collapsedSidebarMode: 'all',
+          sidebarScrollbarSize: 8,
+          sidebarScrollbarVisibility: 'hover',
           dataPath: '',
 
           // 快速跳转网站设置

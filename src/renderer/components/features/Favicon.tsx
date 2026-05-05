@@ -49,59 +49,65 @@ const Favicon: FC<FaviconProps> = ({ url, className, preload = false, fetchMode 
   // 从URL获取主机名作为缓存键，这样即使URL参数变化也不会影响缓存
 
   // 获取 favicon
-  const fetchFavicon = useCallback(async (options: { force?: boolean } = {}): Promise<void> => {
-    try {
-      if (!url || !url.trim()) {
-        setError(true)
-        setFaviconUrl(null)
-        setLoading(false)
-        return
-      }
-
-      if (isDirectIconUrl(url)) {
-        setError(false)
-        setFaviconUrl(url)
-        setLoading(false)
-        return
-      }
-
-      if (fetchMode === 'display-only') {
-        setError(true)
-        setFaviconUrl(null)
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-      setError(false)
-
-      // 使用后端 API 获取 favicon URL
-      if (window.api && typeof window.api.getFavicon === 'function') {
-        const result = await window.api.getFavicon(url, options)
-        setFaviconUrl(result)
-      } else {
-        // 如果 API 不可用，使用原始方法作为后备
-        // 确保URL有协议前缀
-        let normalizedUrl = url
-        if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-          if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
-            normalizedUrl = 'http://' + normalizedUrl
-          } else {
-            normalizedUrl = 'https://' + normalizedUrl
-          }
+  const fetchFavicon = useCallback(
+    async (options: { force?: boolean } = {}): Promise<void> => {
+      try {
+        if (!url || !url.trim()) {
+          setError(true)
+          setFaviconUrl(null)
+          setLoading(false)
+          return
         }
-        const parsedUrl = new URL(normalizedUrl)
-        const fallbackUrl = `${parsedUrl.origin}/favicon.ico`
-        setFaviconUrl(fallbackUrl)
+
+        if (isDirectIconUrl(url)) {
+          setError(false)
+          setFaviconUrl(url)
+          setLoading(false)
+          return
+        }
+
+        if (fetchMode === 'display-only') {
+          setError(true)
+          setFaviconUrl(null)
+          setLoading(false)
+          return
+        }
+
+        setLoading(true)
+        setError(false)
+
+        // 使用后端 API 获取 favicon URL
+        if (window.api && typeof window.api.getFavicon === 'function') {
+          const result = await window.api.getFavicon(url, options)
+          setFaviconUrl(result)
+        } else {
+          // 如果 API 不可用，使用原始方法作为后备
+          // 确保URL有协议前缀
+          let normalizedUrl = url
+          if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+            if (
+              normalizedUrl.startsWith('localhost') ||
+              /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)
+            ) {
+              normalizedUrl = 'http://' + normalizedUrl
+            } else {
+              normalizedUrl = 'https://' + normalizedUrl
+            }
+          }
+          const parsedUrl = new URL(normalizedUrl)
+          const fallbackUrl = `${parsedUrl.origin}/favicon.ico`
+          setFaviconUrl(fallbackUrl)
+        }
+      } catch (error) {
+        console.error(`Failed to fetch favicon for ${url}:`, error)
+        setError(true)
+        setFaviconUrl(null)
+      } finally {
+        setLoading(false)
       }
-    } catch (error) {
-      console.error(`Failed to fetch favicon for ${url}:`, error)
-      setError(true)
-      setFaviconUrl(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [url, fetchMode])
+    },
+    [url, fetchMode]
+  )
 
   // 预加载 favicon
   const preloadFavicons = useCallback(async (): Promise<void> => {
@@ -147,7 +153,8 @@ const Favicon: FC<FaviconProps> = ({ url, className, preload = false, fetchMode 
   useEffect(() => {
     const handleFaviconUpdated = (event: Event): void => {
       const customEvent = event as CustomEvent<{ origin?: string; url?: string }>
-      const targetOrigin = customEvent.detail?.origin ?? normalizeOrigin(customEvent.detail?.url || '')
+      const targetOrigin =
+        customEvent.detail?.origin ?? normalizeOrigin(customEvent.detail?.url || '')
       const currentOrigin = normalizeOrigin(url)
 
       if (!targetOrigin || !currentOrigin || targetOrigin !== currentOrigin) {

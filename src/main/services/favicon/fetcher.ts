@@ -204,7 +204,9 @@ async function probeWithRedirects(
               intentionalAbort = true
               req.destroy()
               res.destroy()
-              void probe(nextUrl, redirectsLeft - 1).then(safeResolve).catch(safeReject)
+              void probe(nextUrl, redirectsLeft - 1)
+                .then(safeResolve)
+                .catch(safeReject)
               return
             } catch (error) {
               safeReject(error instanceof Error ? error : new Error(String(error)))

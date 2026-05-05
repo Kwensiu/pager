@@ -68,6 +68,8 @@ export interface Settings {
   leftMenuPosition?: 'left' | 'right' // 侧边栏位置
   howLinkOpenMethod?: 'tuboshu' | 'external' // 链接打开方式
   collapsedSidebarMode?: 'all' | 'expanded' // 侧边栏折叠模式
+  sidebarScrollbarSize?: number // 侧边栏滚动条尺寸
+  sidebarScrollbarVisibility?: 'hover' | 'always' // 侧边栏滚动条显示策略
   language?: string // 语言设置
   minimizeToTray?: 'tray' | 'exit' // 关闭主窗口行为：托盘或退出
   dataPath?: string // 数据路径

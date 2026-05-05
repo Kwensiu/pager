@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import { Button } from '@/ui/button'
 import { useI18n } from '@/core/i18n/useI18n'
+import { useSettings } from '@/hooks/useSettings'
+import { OverlayScrollArea } from '@/ui/overlay-scroll-area'
 import { AddExtensionDialog } from './AddExtensionDialog'
 import { ConfirmDialog } from './ConfirmDialog'
 import type { ExtensionManifest } from '../../../shared/types/store'
@@ -51,6 +53,7 @@ interface ExtensionManagerProps {
 
 export function ExtensionManager({ open }: ExtensionManagerProps): JSX.Element {
   const { t } = useI18n()
+  const { settings } = useSettings()
   const [extensions, setExtensions] = useState<Extension[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -541,7 +544,13 @@ Manifest 信息:
         </div>
 
         {/* 扩展列表容器 - 添加滚动条 */}
-        <div className="flex-1 min-h-0 extension-scrollbar overflow-y-auto pr-2">
+        <OverlayScrollArea
+          className="flex-1 min-h-0"
+          viewportClassName="pr-2"
+          scrollbarSize={Math.max(6, Math.min(14, settings.sidebarScrollbarSize ?? 8))}
+          scrollbarVisibility={settings.sidebarScrollbarVisibility ?? 'hover'}
+          thumbClassName="bg-muted-foreground/20 hover:bg-muted-foreground/40"
+        >
           {/* 加载状态 */}
           {isLoading && (
             <div className="flex items-center justify-center py-8">
@@ -723,7 +732,7 @@ Manifest 信息:
               ))}
             </div>
           )}
-        </div>
+        </OverlayScrollArea>
 
         {/* 扩展详情对话框 */}
         {selectedExtension && (

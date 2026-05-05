@@ -405,11 +405,10 @@ export function useSidebarLogic({
       const filteredPrimaryWebsites = pg.websites?.filter((w) => w.id !== websiteIdToDelete) || []
 
       // 然后从二级分组的网站中删除
-      const updatedSecondaryGroups = pg.secondaryGroups
-        .map((sg) => ({
-          ...sg,
-          websites: sg.websites?.filter((w) => w.id !== websiteIdToDelete) || []
-        }))
+      const updatedSecondaryGroups = pg.secondaryGroups.map((sg) => ({
+        ...sg,
+        websites: sg.websites?.filter((w) => w.id !== websiteIdToDelete) || []
+      }))
 
       return {
         ...pg,

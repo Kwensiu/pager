@@ -626,123 +626,6 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
         } catch (error) {
           console.error('注入鼠标侧键脚本时出错:', error)
         }
-
-        // 注入自定义滚动条样式到webview - 真正的悬浮效果
-        try {
-          const scrollbarStyles = `
-            /* 自定义滚动条样式 - 真正的悬浮效果 */
-            ::-webkit-scrollbar {
-              width: 10px;
-              height: 10px;
-            }
-
-            ::-webkit-scrollbar-track {
-              background: transparent;
-              margin: 0;
-            }
-
-            ::-webkit-scrollbar-thumb {
-              background: rgba(100, 116, 139, 0.15);
-              border-radius: 5px;
-              border: 3px solid transparent;
-              background-clip: content-box;
-              transition: all 0.3s ease;
-              opacity: 0;
-            }
-
-            /* 滚动时显示滚动条 */
-            :hover::-webkit-scrollbar-thumb,
-            :active::-webkit-scrollbar-thumb,
-            :focus::-webkit-scrollbar-thumb {
-              opacity: 1;
-            }
-
-            ::-webkit-scrollbar-thumb:hover {
-              background: rgba(100, 116, 139, 0.4);
-              border: 2px solid transparent;
-            }
-
-            ::-webkit-scrollbar-thumb:active {
-              background: rgba(100, 116, 139, 0.6);
-            }
-
-            ::-webkit-scrollbar-corner {
-              background: transparent;
-            }
-
-            /* 暗色模式检测 */
-            @media (prefers-color-scheme: dark) {
-              ::-webkit-scrollbar-thumb {
-                background: rgba(148, 163, 184, 0.15);
-              }
-
-              ::-webkit-scrollbar-thumb:hover {
-                background: rgba(148, 163, 184, 0.4);
-              }
-
-              ::-webkit-scrollbar-thumb:active {
-                background: rgba(148, 163, 184, 0.6);
-              }
-            }
-
-            /* Firefox滚动条样式 */
-            * {
-              scrollbar-width: thin;
-              scrollbar-color: rgba(100, 116, 139, 0.15) transparent;
-            }
-
-            /* Firefox悬停效果 */
-            :hover {
-              scrollbar-color: rgba(100, 116, 139, 0.4) transparent;
-            }
-
-            @media (prefers-color-scheme: dark) {
-              * {
-                scrollbar-color: rgba(148, 163, 184, 0.15) transparent;
-              }
-              
-              :hover {
-                scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
-              }
-            }
-
-            /* 强制滚动条覆盖在内容之上 */
-            html, body {
-              overflow: overlay !important;
-            }
-
-            /* 为不支持overlay的浏览器提供回退 */
-            @supports not (overflow: overlay) {
-              html, body {
-                overflow: auto;
-                padding-right: 0 !important;
-              }
-            }
-          `
-
-          // 创建style元素并注入到webview的document中
-          webview
-            .executeJavaScript(
-              `
-            (function() {
-              const styleId = 'custom-scrollbar-styles';
-              let style = document.getElementById(styleId);
-              if (!style) {
-                style = document.createElement('style');
-                style.id = styleId;
-                style.textContent = \`${scrollbarStyles}\`;
-                document.head.appendChild(style);
-              }
-              return true;
-            })();
-          `
-            )
-            .catch(() => {
-              // 忽略注入失败
-            })
-        } catch (error) {
-          console.error('注入滚动条样式时出错:', error)
-        }
       }
 
       webview.addEventListener('dom-ready', handleDomReady)
@@ -822,31 +705,33 @@ export const WebViewContainer = forwardRef<HTMLDivElement, WebViewContainerProps
           return
         }
 
-try {
-    const faviconUrl = await window.api.getFavicon(targetUrl, { force: options.force === true })
+        try {
+          const faviconUrl = await window.api.getFavicon(targetUrl, {
+            force: options.force === true
+          })
 
-    if (faviconUrl && websiteId && window.api?.store?.updateWebsite) {
-      await window.api.store.updateWebsite(websiteId, { favicon: faviconUrl })
-    }
+          if (faviconUrl && websiteId && window.api?.store?.updateWebsite) {
+            await window.api.store.updateWebsite(websiteId, { favicon: faviconUrl })
+          }
 
-    const detail: FaviconUpdatedEventDetail = {
-      websiteId,
-      url: targetUrl,
-      faviconUrl
-    }
+          const detail: FaviconUpdatedEventDetail = {
+            websiteId,
+            url: targetUrl,
+            faviconUrl
+          }
 
-    try {
-      detail.origin = new URL(targetUrl).origin
-    } catch {
-      // ignore invalid URL
-    }
+          try {
+            detail.origin = new URL(targetUrl).origin
+          } catch {
+            // ignore invalid URL
+          }
 
-    window.dispatchEvent(
-      new CustomEvent<FaviconUpdatedEventDetail>('pager:favicon-updated', { detail })
-    )
-  } catch (error) {
-    console.warn('Failed to refresh favicon on page reload:', error)
-  }
+          window.dispatchEvent(
+            new CustomEvent<FaviconUpdatedEventDetail>('pager:favicon-updated', { detail })
+          )
+        } catch (error) {
+          console.warn('Failed to refresh favicon on page reload:', error)
+        }
       },
       [url, websiteId]
     )

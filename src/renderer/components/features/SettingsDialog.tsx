@@ -22,6 +22,7 @@ import {
 import { ExtensionManager } from './ExtensionManager'
 import { ShortcutSettings } from './ShortcutSettings'
 import { ScriptManager } from './ScriptManager'
+import { OverlayScrollArea } from '@/ui/overlay-scroll-area'
 
 interface SettingsDialogProps {
   open?: boolean
@@ -418,6 +419,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
       autoCheckUpdates: true,
       minimizeToTray: 'exit',
       collapsedSidebarMode: 'all',
+      sidebarScrollbarSize: 8,
+      sidebarScrollbarVisibility: 'hover',
       // 快速跳转网站设置
       quickResetWebsite: true,
       resetWebsiteConfirmDialog: true,
@@ -765,937 +768,1017 @@ const SettingsDialog: React.FC<SettingsDialogProps> = () => {
   }
 
   return (
-    <div className="p-6 h-full overflow-y-auto bg-background text-foreground sidebar-scrollbar">
-      <h1 className="text-2xl font-bold mb-6 text-foreground">{t('settings.title', '设置')}</h1>
+    <div className="h-full overflow-hidden bg-background text-foreground">
+      <OverlayScrollArea
+        className="h-full"
+        viewportClassName="p-6"
+        scrollbarSize={Math.max(6, Math.min(14, settings.sidebarScrollbarSize ?? 8))}
+        scrollbarVisibility={settings.sidebarScrollbarVisibility ?? 'hover'}
+        thumbClassName="bg-muted-foreground/20 hover:bg-muted-foreground/40"
+      >
+        <h1 className="text-2xl font-bold mb-6 text-foreground">{t('settings.title', '设置')}</h1>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-7 mb-4">
-          <TabsTrigger value="general">通用</TabsTrigger>
-          <TabsTrigger value="privacy">隐私</TabsTrigger>
-          <TabsTrigger value="window">窗口</TabsTrigger>
-          <TabsTrigger value="performance">性能</TabsTrigger>
-          <TabsTrigger value="network">网络</TabsTrigger>
-          <TabsTrigger value="scripts">脚本</TabsTrigger>
-          <TabsTrigger value="advanced">高级</TabsTrigger>
-        </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-7 mb-4">
+            <TabsTrigger value="general">通用</TabsTrigger>
+            <TabsTrigger value="privacy">隐私</TabsTrigger>
+            <TabsTrigger value="window">窗口</TabsTrigger>
+            <TabsTrigger value="performance">性能</TabsTrigger>
+            <TabsTrigger value="network">网络</TabsTrigger>
+            <TabsTrigger value="scripts">脚本</TabsTrigger>
+            <TabsTrigger value="advanced">高级</TabsTrigger>
+          </TabsList>
 
-        {/* 通用设置 */}
-        <TabsContent value="general" className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.theme')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.themeDescription')}</p>
-              </div>
-              <Select
-                value={settings.theme}
-                onValueChange={(value: 'light' | 'dark') => handleSettingChange('theme', value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">浅色</SelectItem>
-                  <SelectItem value="dark">深色</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.language')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.languageDescription')}</p>
-              </div>
-              <Select
-                value={settings.language}
-                onValueChange={(value: string) => handleSettingChange('language', value)}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="zh">中文</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.collapsedSidebarMode')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.collapsedSidebarModeDescription')}
-                </p>
-              </div>
-              <Select
-                value={settings.collapsedSidebarMode}
-                onValueChange={(value: 'all' | 'expanded') =>
-                  handleSettingChange('collapsedSidebarMode', value)
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">显示所有网站</SelectItem>
-                  <SelectItem value="expanded">仅显示展开的分组</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.closeMainWindow')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.closeMainWindowDescription')}
-                </p>
-              </div>
-              <Select
-                value={settings.minimizeToTray}
-                onValueChange={(value: 'tray' | 'exit') =>
-                  handleSettingChange('minimizeToTray', value)
-                }
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tray">{t('settings.minimizeToTray')}</SelectItem>
-                  <SelectItem value="exit">{t('settings.exitApp')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.isAutoLaunch')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.isAutoLaunchDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.isAutoLaunch}
-                onCheckedChange={(checked) => handleSettingChange('isAutoLaunch', checked)}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.quickResetWebsite')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.quickResetWebsiteDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.quickResetWebsite}
-                onCheckedChange={(checked) => handleSettingChange('quickResetWebsite', checked)}
-              />
-            </div>
-
-            {settings.quickResetWebsite && (
-              <div className="pl-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>{t('settings.resetWebsiteConfirmDialog')}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('settings.resetWebsiteConfirmDialogDescription')}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.resetWebsiteConfirmDialog}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange('resetWebsiteConfirmDialog', checked)
-                    }
-                  />
-                </div>
-              </div>
-            )}
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.autoCloseSettingsOnWebsiteClick')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.autoCloseSettingsOnWebsiteClickDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.autoCloseSettingsOnWebsiteClick}
-                onCheckedChange={(checked) =>
-                  handleSettingChange('autoCloseSettingsOnWebsiteClick', checked)
-                }
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* 隐私设置 */}
-        <TabsContent value="privacy" className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.enableJavaScript')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.enableJavaScriptDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.enableJavaScript}
-                onCheckedChange={(checked) => {
-                  handleSettingChange('enableJavaScript', checked)
-                  setToastMessage('JavaScript 设置已更改，已自动刷新页面')
-                  setShowToast(true)
-                  setTimeout(() => setShowToast(false), 3000)
-                }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.allowPopups')}</Label>
-                <p className="text-sm text-muted-foreground">{t('settings.popupDescription')}</p>
-              </div>
-              <Switch
-                checked={settings.allowPopups}
-                onCheckedChange={(checked) => handleSettingChange('allowPopups', checked)}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.sessionIsolationEnabled')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.sessionIsolationEnabledDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.sessionIsolationEnabled}
-                onCheckedChange={(checked) => {
-                  handleSettingChange('sessionIsolationEnabled', checked)
-                  setToastMessage('Session 隔离设置已更改，已自动刷新页面')
-                  setShowToast(true)
-                  setTimeout(() => setShowToast(false), 3000)
-                }}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.crashReportingEnabled')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.crashReportingEnabledDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.crashReportingEnabled}
-                onCheckedChange={(checked) => handleSettingChange('crashReportingEnabled', checked)}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.saveSession')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.saveSessionDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.saveSession}
-                onCheckedChange={(checked) => handleSettingChange('saveSession', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center justify-between flex-1">
-                <div className="space-y-0.5">
-                  <Label>{t('settings.clearCacheOnExit')}</Label>
-                  <p className="text-sm text-muted-foreground">{t('settings.cacheDescription')}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 ml-2"
-                  onClick={() => setShowClearCacheSettingsDialog(true)}
-                  title={t('settings.clearCacheSettings')}
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                  >
-                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </Button>
-              </div>
-              <Switch
-                checked={settings.clearCacheOnExit}
-                onCheckedChange={(checked) => handleSettingChange('clearCacheOnExit', checked)}
-                className="ml-4"
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>允许本地文件访问</Label>
-                <p className="text-sm text-muted-foreground">
-                  允许添加和访问本地文件（file://协议）
-                </p>
-              </div>
-              <Switch
-                checked={settings.allowLocalFileAccess || false}
-                onCheckedChange={(checked) => handleSettingChange('allowLocalFileAccess', checked)}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* 窗口设置 */}
-        <TabsContent value="window" className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.windowAlwaysOnTop')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.windowAlwaysOnTopDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.windowAlwaysOnTop}
-                onCheckedChange={(checked) => handleSettingChange('windowAlwaysOnTop', checked)}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.windowMiniMode')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.windowMiniModeDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.windowMiniMode}
-                onCheckedChange={(checked) => handleSettingChange('windowMiniMode', checked)}
-              />
-            </div>
-
-            <Separator />
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>{t('settings.trayEnabled')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('settings.trayEnabledDescription')}
-                </p>
-              </div>
-              <Switch
-                checked={settings.trayEnabled}
-                onCheckedChange={(checked) => handleSettingChange('trayEnabled', checked)}
-              />
-            </div>
-
-            {settings.trayEnabled && (
-              <div className="pl-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>{t('settings.trayShowNotifications')}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('settings.trayShowNotificationsDescription')}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.trayShowNotifications}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange('trayShowNotifications', checked)
-                    }
-                  />
-                </div>
-              </div>
-            )}
-
-            <Separator />
-
-            {/* 快捷键设置 */}
-            <ShortcutSettings />
-          </div>
-        </TabsContent>
-
-        {/* 性能设置 */}
-        <TabsContent value="performance" className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>内存优化</Label>
-                <p className="text-sm text-muted-foreground">自动清理不活跃的网站以释放内存</p>
-              </div>
-              <Switch
-                checked={settings.memoryOptimizerEnabled}
-                onCheckedChange={(checked) =>
-                  handleSettingChange('memoryOptimizerEnabled', checked)
-                }
-              />
-            </div>
-
-            {settings.memoryOptimizerEnabled && (
-              <div className="pl-4 space-y-4">
-                {/* 内存统计 */}
-                <div className="rounded-lg border bg-muted p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      <Label className="text-base font-semibold">内存使用情况</Label>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={loadMemoryStats}
-                      disabled={loadingMemoryStats}
-                    >
-                      {loadingMemoryStats ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <span className="text-sm">刷新</span>
-                      )}
-                    </Button>
-                  </div>
-
-                  {memoryStats && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">活跃网站</p>
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {memoryStats.activeCount}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">不活跃网站</p>
-                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          {memoryStats.inactiveCount}
-                        </p>
-                      </div>
-                      {memoryStats.currentMemoryUsage ? (
-                        <>
-                          <div className="space-y-1 col-span-2">
-                            <p className="text-xs text-muted-foreground">当前内存使用</p>
-                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                              {Math.round(memoryStats.currentMemoryUsage.workingSetSize / 1024)} MB
-                            </p>
-                          </div>
-                          <div className="space-y-1 col-span-2">
-                            <p className="text-xs text-muted-foreground">私有内存</p>
-                            <p className="text-lg text-slate-600 dark:text-slate-400">
-                              {Math.round(memoryStats.currentMemoryUsage.privateBytes / 1024)} MB
-                            </p>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="space-y-1 col-span-2">
-                          <p className="text-xs text-muted-foreground">当前内存使用</p>
-                          <p className="text-lg text-slate-600 dark:text-slate-400">暂无数据</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {!memoryStats && !loadingMemoryStats && (
-                    <p className="text-sm text-muted-foreground">点击刷新按钮查看内存统计</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>清理间隔（分钟）</Label>
-                    <Input
-                      type="number"
-                      value={settings.memoryCleanInterval}
-                      onChange={(e) =>
-                        handleSettingChange('memoryCleanInterval', parseInt(e.target.value) || 30)
-                      }
-                      min={5}
-                      max={240}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>最大不活跃时间（分钟）</Label>
-                    <Input
-                      type="number"
-                      value={settings.maxInactiveTime}
-                      onChange={(e) =>
-                        handleSettingChange('maxInactiveTime', parseInt(e.target.value) || 60)
-                      }
-                      min={10}
-                      max={480}
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <Label className="text-base font-semibold">清理选项</Label>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>启用垃圾回收</Label>
-                      <p className="text-sm text-muted-foreground">
-                        定期触发 V8 垃圾回收以释放内存
-                      </p>
-                    </div>
-                    <Switch
-                      checked={settings.enableGarbageCollection ?? true}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('enableGarbageCollection', checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>紧急清理</Label>
-                      <p className="text-sm text-muted-foreground">当内存超过阈值时自动清理</p>
-                    </div>
-                    <Switch
-                      checked={settings.enableEmergencyCleanup ?? true}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('enableEmergencyCleanup', checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>清理会话缓存</Label>
-                      <p className="text-sm text-muted-foreground">清理不活跃网站的会话数据</p>
-                    </div>
-                    <Switch
-                      checked={settings.clearInactiveSessionCache ?? false}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('clearInactiveSessionCache', checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>清理 Cookie</Label>
-                      <p className="text-sm text-muted-foreground">清理不活跃网站的 Cookie 数据</p>
-                    </div>
-                    <Switch
-                      checked={settings.clearInactiveCookies ?? false}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('clearInactiveCookies', checked)
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>清理本地存储</Label>
-                      <p className="text-sm text-muted-foreground">清理不活跃网站的 localStorage</p>
-                    </div>
-                    <Switch
-                      checked={settings.clearInactiveLocalStorage ?? false}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('clearInactiveLocalStorage', checked)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <Button
-                  variant="default"
-                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-white"
-                  onClick={async () => {
-                    const cleanedIds = await window.api.enhanced.memoryOptimizer.cleanInactive()
-                    console.log('Cleaned websites:', cleanedIds)
-                  }}
-                >
-                  立即清理不活跃网站
-                </Button>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* 网络设置 */}
-        <TabsContent value="network" className="space-y-6">
-          <div className="space-y-6">
-            {/* 代理设置 */}
-            <div className="rounded-lg border bg-card p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-5 w-5 text-primary" />
-                    <Label className="text-base font-semibold">{t('proxy.title')}</Label>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{t('proxy.description')}</p>
-                </div>
-                <Switch
-                  checked={settings.proxyEnabled}
-                  onCheckedChange={(checked) => handleSettingChange('proxyEnabled', checked)}
-                />
-              </div>
-
-              <div className="space-y-4">
-                {/* 软件代理开关 */}
-                <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
-                  <div className="space-y-1">
-                    <Label className="text-sm font-medium">{t('proxy.softwareOnly')}</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {t('proxy.softwareOnlyDescription')}
-                    </p>
-                  </div>
-                  <Switch
-                    checked={settings.proxySoftwareOnly ?? true}
-                    onCheckedChange={(checked) => handleSettingChange('proxySoftwareOnly', checked)}
-                  />
-                </div>
-
-                {/* 网页代理设置 - 始终显示 */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Label className="text-sm font-medium">{t('proxy.rules')}</Label>
-                    {settings.proxySoftwareOnly && (
-                      <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                        {t('proxy.softwareProxyEnabled')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={localProxyRules}
-                      onChange={(e) => {
-                        setLocalProxyRules(e.target.value)
-                        hasUserModifiedProxyRules.current = true
-                      }}
-                      onBlur={handleProxyRulesBlur}
-                      placeholder={t('proxy.rulesPlaceholder')}
-                      className="font-mono flex-1"
-                    />
-                    <Button
-                      onClick={testProxyConnection}
-                      variant="outline"
-                      size="sm"
-                      disabled={isTestingProxy || !(localProxyRules || settings.proxyRules)?.trim()}
-                      className="h-9 px-2"
-                    >
-                      {isTestingProxy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Zap className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>{t('proxy.supportedFormats')}</strong>
-                    </p>
-                    <div className="grid gap-2 text-xs text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-secondary rounded text-xs">
-                          {t('proxy.http')}
-                        </span>
-                        <code>http=proxy.example.com:8080;https=proxy.example.com:8080</code>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-secondary rounded text-xs">
-                          {t('proxy.socks5')}
-                        </span>
-                        <code>socks5://proxy.example.com:1080</code>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-secondary rounded text-xs">
-                          {t('proxy.simple')}
-                        </span>
-                        <code>proxy.example.com:8080</code>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 测试结果显示 */}
-                {proxyTestResult && (
-                  <div className="flex items-center gap-2 text-sm p-3 rounded-md bg-muted/50">
-                    {proxyTestResult.success ? (
-                      <>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600">
-                          {t('proxy.connectionSuccess')}{' '}
-                          {proxyTestResult.latency && `(${proxyTestResult.latency}ms)`}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-4 w-4 text-red-500" />
-                        <span className="text-red-600">
-                          {proxyTestResult.error || t('proxy.connectionFailed')}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* 当前代理设置显示 */}
-                <div className="space-y-3">
-                  <Button
-                    onClick={handleGetCurrentProxySettings}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    检查当前代理设置
-                  </Button>
-                  {currentProxySettings && (
-                    <div className="p-3 rounded-md bg-muted/50">
-                      <Label className="text-sm font-medium mb-2 block">当前代理设置：</Label>
-                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
-                        {currentProxySettings}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* 脚本设置 */}
-        <TabsContent value="scripts" className="space-y-4">
-          <div className="rounded-lg border bg-card p-6">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">脚本管理</h3>
-                <p className="text-sm text-muted-foreground">
-                  管理你的自定义 JavaScript 脚本，可以为网站注入代码以增强功能或修改页面行为
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Button
-                  onClick={() => setShowScriptManager(true)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  打开脚本管理器
-                </Button>
-              </div>
-
-              <div className="rounded-md bg-muted p-4">
-                <h4 className="font-medium mb-2">使用说明</h4>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>从 Greasy Fork 等网站获取脚本内容</li>
-                  <li>在脚本管理器中创建新脚本并粘贴代码</li>
-                  <li>编辑网站时可以选择要注入的脚本</li>
-                  <li>脚本仅在指定的网站上执行</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* 高级设置 */}
-        <TabsContent value="advanced" className="space-y-4">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>扩展设置</Label>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>启用扩展</Label>
-                    <p className="text-sm text-muted-foreground">启用浏览器扩展功能</p>
-                  </div>
-                  <Switch
-                    checked={settings.extensionSettings?.enableExtensions}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange('extensionSettings', {
-                        ...settings.extensionSettings,
-                        enableExtensions: checked
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>自动加载扩展</Label>
-                    <p className="text-sm text-muted-foreground">启动时自动加载已安装的扩展</p>
-                  </div>
-                  <Switch
-                    checked={settings.extensionSettings?.autoLoadExtensions}
-                    onCheckedChange={(checked) =>
-                      handleSettingChange('extensionSettings', {
-                        ...settings.extensionSettings,
-                        autoLoadExtensions: checked
-                      })
-                    }
-                  />
-                </div>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => setShowExtensionManager(true)}
-                >
-                  <span>管理扩展</span>
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>数据管理</Label>
-              <div className="text-sm text-muted-foreground mb-1">
-                数据存储路径: {settings.dataPath || '获取路径中...'}
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Button onClick={exportAllSettings} variant="outline" size="sm">
-                  导出所有设置
-                </Button>
-                <Button onClick={importAllSettings} variant="outline" size="sm">
-                  导入设置
-                </Button>
-                <Button onClick={handleResetToDefaults} variant="warning" size="sm">
-                  恢复默认设置
-                </Button>
-                <Button
-                  onClick={() => setShowClearDataConfirmDialog(true)}
-                  variant="destructive"
-                  size="sm"
-                >
-                  清除所有数据
-                </Button>
-                <Button onClick={openDataDirectory} variant="outline" size="sm">
-                  打开数据目录
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>应用信息</Label>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>{t('settings.autoCheckUpdates')}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('settings.autoCheckUpdatesDescription')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={handleManualUpdateCheck}
-                      title="手动检查更新"
-                      disabled={isCheckingUpdate}
-                    >
-                      <svg
-                        className={`h-4 w-4 ${isCheckingUpdate ? 'animate-spin' : ''}`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                      >
-                        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </Button>
-                    <Switch
-                      checked={settings.autoCheckUpdates}
-                      onCheckedChange={(checked) =>
-                        handleSettingChange('autoCheckUpdates', checked)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  <p>Pager: {versionInfo?.appVersion || '加载中...'}</p>
-                  <p>Electron: {versionInfo?.electronVersion || '加载中...'}</p>
-                  <p>Chrome: {versionInfo?.chromeVersion || '加载中...'}</p>
-                  <p>Node.js: {versionInfo?.nodeVersion || '加载中...'}</p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* 调试选项 */}
+          {/* 通用设置 */}
+          <TabsContent value="general" className="space-y-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>调试模式</Label>
-                  <p className="text-sm text-muted-foreground">显示高级调试选项</p>
+                  <Label>{t('settings.theme')}</Label>
+                  <p className="text-sm text-muted-foreground">{t('settings.themeDescription')}</p>
+                </div>
+                <Select
+                  value={settings.theme}
+                  onValueChange={(value: 'light' | 'dark') => handleSettingChange('theme', value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">浅色</SelectItem>
+                    <SelectItem value="dark">深色</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.language')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.languageDescription')}
+                  </p>
+                </div>
+                <Select
+                  value={settings.language}
+                  onValueChange={(value: string) => handleSettingChange('language', value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="zh">中文</SelectItem>
+                    <SelectItem value="en">English</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.collapsedSidebarMode')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.collapsedSidebarModeDescription')}
+                  </p>
+                </div>
+                <Select
+                  value={settings.collapsedSidebarMode}
+                  onValueChange={(value: 'all' | 'expanded') =>
+                    handleSettingChange('collapsedSidebarMode', value)
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">显示所有网站</SelectItem>
+                    <SelectItem value="expanded">仅显示展开的分组</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.sidebarScrollbarSize', '侧边栏滚动条粗细')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.sidebarScrollbarSizeDescription', '调整侧边栏滚动条的宽度')}
+                  </p>
+                </div>
+                <Select
+                  value={String(settings.sidebarScrollbarSize ?? 8)}
+                  onValueChange={(value: string) =>
+                    handleSettingChange('sidebarScrollbarSize', Number.parseInt(value, 10))
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">6 px</SelectItem>
+                    <SelectItem value="8">8 px</SelectItem>
+                    <SelectItem value="10">10 px</SelectItem>
+                    <SelectItem value="12">12 px</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.sidebarScrollbarVisibility', '侧边栏滚动条显示')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t(
+                      'settings.sidebarScrollbarVisibilityDescription',
+                      '选择悬停显示或始终显示滚动条'
+                    )}
+                  </p>
+                </div>
+                <Select
+                  value={settings.sidebarScrollbarVisibility ?? 'hover'}
+                  onValueChange={(value: 'hover' | 'always') =>
+                    handleSettingChange('sidebarScrollbarVisibility', value)
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hover">
+                      {t('settings.sidebarScrollbarVisibilityHover', '悬停时显示')}
+                    </SelectItem>
+                    <SelectItem value="always">
+                      {t('settings.sidebarScrollbarVisibilityAlways', '始终显示')}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.closeMainWindow')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.closeMainWindowDescription')}
+                  </p>
+                </div>
+                <Select
+                  value={settings.minimizeToTray}
+                  onValueChange={(value: 'tray' | 'exit') =>
+                    handleSettingChange('minimizeToTray', value)
+                  }
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tray">{t('settings.minimizeToTray')}</SelectItem>
+                    <SelectItem value="exit">{t('settings.exitApp')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.isAutoLaunch')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.isAutoLaunchDescription')}
+                  </p>
                 </div>
                 <Switch
-                  checked={settings.showDebugOptions}
-                  onCheckedChange={(checked) => handleSettingChange('showDebugOptions', checked)}
+                  checked={settings.isAutoLaunch}
+                  onCheckedChange={(checked) => handleSettingChange('isAutoLaunch', checked)}
                 />
               </div>
 
-              {settings.showDebugOptions && (
-                <div className="border-red-500 border-2 rounded-lg p-4 bg-red-50 dark:bg-red-900/20 dark:border-red-700">
-                  <h3 className="text-lg font-semibold mb-2 text-red-700 dark:text-red-300">
-                    调试选项
-                  </h3>
-                  <div className="space-y-2">
-                    <p className="text-red-600 dark:text-red-400 text-sm">
-                      警告：这些选项仅供调试使用，操作可能不可恢复！
-                    </p>
+              <Separator />
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => {
-                          if (window.api?.window?.openDevTools) {
-                            window.api.window.openDevTools()
-                          } else {
-                            alert('打开开发者工具功能不可用')
-                          }
-                        }}
-                      >
-                        打开开发者工具
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setShowCrashConfirmDialog(true)}
-                        className="relative overflow-hidden"
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-1" />
-                        模拟崩溃
-                      </Button>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.quickResetWebsite')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.quickResetWebsiteDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.quickResetWebsite}
+                  onCheckedChange={(checked) => handleSettingChange('quickResetWebsite', checked)}
+                />
+              </div>
+
+              {settings.quickResetWebsite && (
+                <div className="pl-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t('settings.resetWebsiteConfirmDialog')}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {t('settings.resetWebsiteConfirmDialogDescription')}
+                      </p>
                     </div>
+                    <Switch
+                      checked={settings.resetWebsiteConfirmDialog}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('resetWebsiteConfirmDialog', checked)
+                      }
+                    />
                   </div>
                 </div>
               )}
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.autoCloseSettingsOnWebsiteClick')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.autoCloseSettingsOnWebsiteClickDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.autoCloseSettingsOnWebsiteClick}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange('autoCloseSettingsOnWebsiteClick', checked)
+                  }
+                />
+              </div>
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+
+          {/* 隐私设置 */}
+          <TabsContent value="privacy" className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.enableJavaScript')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.enableJavaScriptDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.enableJavaScript}
+                  onCheckedChange={(checked) => {
+                    handleSettingChange('enableJavaScript', checked)
+                    setToastMessage('JavaScript 设置已更改，已自动刷新页面')
+                    setShowToast(true)
+                    setTimeout(() => setShowToast(false), 3000)
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.allowPopups')}</Label>
+                  <p className="text-sm text-muted-foreground">{t('settings.popupDescription')}</p>
+                </div>
+                <Switch
+                  checked={settings.allowPopups}
+                  onCheckedChange={(checked) => handleSettingChange('allowPopups', checked)}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.sessionIsolationEnabled')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.sessionIsolationEnabledDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.sessionIsolationEnabled}
+                  onCheckedChange={(checked) => {
+                    handleSettingChange('sessionIsolationEnabled', checked)
+                    setToastMessage('Session 隔离设置已更改，已自动刷新页面')
+                    setShowToast(true)
+                    setTimeout(() => setShowToast(false), 3000)
+                  }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.crashReportingEnabled')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.crashReportingEnabledDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.crashReportingEnabled}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange('crashReportingEnabled', checked)
+                  }
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.saveSession')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.saveSessionDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.saveSession}
+                  onCheckedChange={(checked) => handleSettingChange('saveSession', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-1">
+                  <div className="space-y-0.5">
+                    <Label>{t('settings.clearCacheOnExit')}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('settings.cacheDescription')}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 ml-2"
+                    onClick={() => setShowClearCacheSettingsDialog(true)}
+                    title={t('settings.clearCacheSettings')}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                    >
+                      <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </Button>
+                </div>
+                <Switch
+                  checked={settings.clearCacheOnExit}
+                  onCheckedChange={(checked) => handleSettingChange('clearCacheOnExit', checked)}
+                  className="ml-4"
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>允许本地文件访问</Label>
+                  <p className="text-sm text-muted-foreground">
+                    允许添加和访问本地文件（file://协议）
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.allowLocalFileAccess || false}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange('allowLocalFileAccess', checked)
+                  }
+                />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* 窗口设置 */}
+          <TabsContent value="window" className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.windowAlwaysOnTop')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.windowAlwaysOnTopDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.windowAlwaysOnTop}
+                  onCheckedChange={(checked) => handleSettingChange('windowAlwaysOnTop', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.windowMiniMode')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.windowMiniModeDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.windowMiniMode}
+                  onCheckedChange={(checked) => handleSettingChange('windowMiniMode', checked)}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('settings.trayEnabled')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {t('settings.trayEnabledDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.trayEnabled}
+                  onCheckedChange={(checked) => handleSettingChange('trayEnabled', checked)}
+                />
+              </div>
+
+              {settings.trayEnabled && (
+                <div className="pl-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t('settings.trayShowNotifications')}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {t('settings.trayShowNotificationsDescription')}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.trayShowNotifications}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('trayShowNotifications', checked)
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* 快捷键设置 */}
+              <ShortcutSettings />
+            </div>
+          </TabsContent>
+
+          {/* 性能设置 */}
+          <TabsContent value="performance" className="space-y-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>内存优化</Label>
+                  <p className="text-sm text-muted-foreground">自动清理不活跃的网站以释放内存</p>
+                </div>
+                <Switch
+                  checked={settings.memoryOptimizerEnabled}
+                  onCheckedChange={(checked) =>
+                    handleSettingChange('memoryOptimizerEnabled', checked)
+                  }
+                />
+              </div>
+
+              {settings.memoryOptimizerEnabled && (
+                <div className="pl-4 space-y-4">
+                  {/* 内存统计 */}
+                  <div className="rounded-lg border bg-muted p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5" />
+                        <Label className="text-base font-semibold">内存使用情况</Label>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={loadMemoryStats}
+                        disabled={loadingMemoryStats}
+                      >
+                        {loadingMemoryStats ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <span className="text-sm">刷新</span>
+                        )}
+                      </Button>
+                    </div>
+
+                    {memoryStats && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">活跃网站</p>
+                          <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {memoryStats.activeCount}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">不活跃网站</p>
+                          <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            {memoryStats.inactiveCount}
+                          </p>
+                        </div>
+                        {memoryStats.currentMemoryUsage ? (
+                          <>
+                            <div className="space-y-1 col-span-2">
+                              <p className="text-xs text-muted-foreground">当前内存使用</p>
+                              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                {Math.round(memoryStats.currentMemoryUsage.workingSetSize / 1024)}{' '}
+                                MB
+                              </p>
+                            </div>
+                            <div className="space-y-1 col-span-2">
+                              <p className="text-xs text-muted-foreground">私有内存</p>
+                              <p className="text-lg text-slate-600 dark:text-slate-400">
+                                {Math.round(memoryStats.currentMemoryUsage.privateBytes / 1024)} MB
+                              </p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="space-y-1 col-span-2">
+                            <p className="text-xs text-muted-foreground">当前内存使用</p>
+                            <p className="text-lg text-slate-600 dark:text-slate-400">暂无数据</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!memoryStats && !loadingMemoryStats && (
+                      <p className="text-sm text-muted-foreground">点击刷新按钮查看内存统计</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>清理间隔（分钟）</Label>
+                      <Input
+                        type="number"
+                        value={settings.memoryCleanInterval}
+                        onChange={(e) =>
+                          handleSettingChange('memoryCleanInterval', parseInt(e.target.value) || 30)
+                        }
+                        min={5}
+                        max={240}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>最大不活跃时间（分钟）</Label>
+                      <Input
+                        type="number"
+                        value={settings.maxInactiveTime}
+                        onChange={(e) =>
+                          handleSettingChange('maxInactiveTime', parseInt(e.target.value) || 60)
+                        }
+                        min={10}
+                        max={480}
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <Label className="text-base font-semibold">清理选项</Label>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>启用垃圾回收</Label>
+                        <p className="text-sm text-muted-foreground">
+                          定期触发 V8 垃圾回收以释放内存
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.enableGarbageCollection ?? true}
+                        onCheckedChange={(checked) =>
+                          handleSettingChange('enableGarbageCollection', checked)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>紧急清理</Label>
+                        <p className="text-sm text-muted-foreground">当内存超过阈值时自动清理</p>
+                      </div>
+                      <Switch
+                        checked={settings.enableEmergencyCleanup ?? true}
+                        onCheckedChange={(checked) =>
+                          handleSettingChange('enableEmergencyCleanup', checked)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>清理会话缓存</Label>
+                        <p className="text-sm text-muted-foreground">清理不活跃网站的会话数据</p>
+                      </div>
+                      <Switch
+                        checked={settings.clearInactiveSessionCache ?? false}
+                        onCheckedChange={(checked) =>
+                          handleSettingChange('clearInactiveSessionCache', checked)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>清理 Cookie</Label>
+                        <p className="text-sm text-muted-foreground">
+                          清理不活跃网站的 Cookie 数据
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.clearInactiveCookies ?? false}
+                        onCheckedChange={(checked) =>
+                          handleSettingChange('clearInactiveCookies', checked)
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>清理本地存储</Label>
+                        <p className="text-sm text-muted-foreground">
+                          清理不活跃网站的 localStorage
+                        </p>
+                      </div>
+                      <Switch
+                        checked={settings.clearInactiveLocalStorage ?? false}
+                        onCheckedChange={(checked) =>
+                          handleSettingChange('clearInactiveLocalStorage', checked)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <Button
+                    variant="default"
+                    className="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:bg-yellow-600 dark:hover:bg-yellow-700 dark:text-white"
+                    onClick={async () => {
+                      const cleanedIds = await window.api.enhanced.memoryOptimizer.cleanInactive()
+                      console.log('Cleaned websites:', cleanedIds)
+                    }}
+                  >
+                    立即清理不活跃网站
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* 网络设置 */}
+          <TabsContent value="network" className="space-y-6">
+            <div className="space-y-6">
+              {/* 代理设置 */}
+              <div className="rounded-lg border bg-card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-primary" />
+                      <Label className="text-base font-semibold">{t('proxy.title')}</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{t('proxy.description')}</p>
+                  </div>
+                  <Switch
+                    checked={settings.proxyEnabled}
+                    onCheckedChange={(checked) => handleSettingChange('proxyEnabled', checked)}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  {/* 软件代理开关 */}
+                  <div className="flex items-center justify-between p-3 rounded-md bg-muted/50">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">{t('proxy.softwareOnly')}</Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t('proxy.softwareOnlyDescription')}
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.proxySoftwareOnly ?? true}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('proxySoftwareOnly', checked)
+                      }
+                    />
+                  </div>
+
+                  {/* 网页代理设置 - 始终显示 */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label className="text-sm font-medium">{t('proxy.rules')}</Label>
+                      {settings.proxySoftwareOnly && (
+                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
+                          {t('proxy.softwareProxyEnabled')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={localProxyRules}
+                        onChange={(e) => {
+                          setLocalProxyRules(e.target.value)
+                          hasUserModifiedProxyRules.current = true
+                        }}
+                        onBlur={handleProxyRulesBlur}
+                        placeholder={t('proxy.rulesPlaceholder')}
+                        className="font-mono flex-1"
+                      />
+                      <Button
+                        onClick={testProxyConnection}
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          isTestingProxy || !(localProxyRules || settings.proxyRules)?.trim()
+                        }
+                        className="h-9 px-2"
+                      >
+                        {isTestingProxy ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Zap className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        <strong>{t('proxy.supportedFormats')}</strong>
+                      </p>
+                      <div className="grid gap-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-secondary rounded text-xs">
+                            {t('proxy.http')}
+                          </span>
+                          <code>http=proxy.example.com:8080;https=proxy.example.com:8080</code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-secondary rounded text-xs">
+                            {t('proxy.socks5')}
+                          </span>
+                          <code>socks5://proxy.example.com:1080</code>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-1 bg-secondary rounded text-xs">
+                            {t('proxy.simple')}
+                          </span>
+                          <code>proxy.example.com:8080</code>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 测试结果显示 */}
+                  {proxyTestResult && (
+                    <div className="flex items-center gap-2 text-sm p-3 rounded-md bg-muted/50">
+                      {proxyTestResult.success ? (
+                        <>
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span className="text-green-600">
+                            {t('proxy.connectionSuccess')}{' '}
+                            {proxyTestResult.latency && `(${proxyTestResult.latency}ms)`}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="h-4 w-4 text-red-500" />
+                          <span className="text-red-600">
+                            {proxyTestResult.error || t('proxy.connectionFailed')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 当前代理设置显示 */}
+                  <div className="space-y-3">
+                    <Button
+                      onClick={handleGetCurrentProxySettings}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      检查当前代理设置
+                    </Button>
+                    {currentProxySettings && (
+                      <div className="p-3 rounded-md bg-muted/50">
+                        <Label className="text-sm font-medium mb-2 block">当前代理设置：</Label>
+                        <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono">
+                          {currentProxySettings}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* 脚本设置 */}
+          <TabsContent value="scripts" className="space-y-4">
+            <div className="rounded-lg border bg-card p-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">脚本管理</h3>
+                  <p className="text-sm text-muted-foreground">
+                    管理你的自定义 JavaScript 脚本，可以为网站注入代码以增强功能或修改页面行为
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowScriptManager(true)}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    打开脚本管理器
+                  </Button>
+                </div>
+
+                <div className="rounded-md bg-muted p-4">
+                  <h4 className="font-medium mb-2">使用说明</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>从 Greasy Fork 等网站获取脚本内容</li>
+                    <li>在脚本管理器中创建新脚本并粘贴代码</li>
+                    <li>编辑网站时可以选择要注入的脚本</li>
+                    <li>脚本仅在指定的网站上执行</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* 高级设置 */}
+          <TabsContent value="advanced" className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>扩展设置</Label>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>启用扩展</Label>
+                      <p className="text-sm text-muted-foreground">启用浏览器扩展功能</p>
+                    </div>
+                    <Switch
+                      checked={settings.extensionSettings?.enableExtensions}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('extensionSettings', {
+                          ...settings.extensionSettings,
+                          enableExtensions: checked
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>自动加载扩展</Label>
+                      <p className="text-sm text-muted-foreground">启动时自动加载已安装的扩展</p>
+                    </div>
+                    <Switch
+                      checked={settings.extensionSettings?.autoLoadExtensions}
+                      onCheckedChange={(checked) =>
+                        handleSettingChange('extensionSettings', {
+                          ...settings.extensionSettings,
+                          autoLoadExtensions: checked
+                        })
+                      }
+                    />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowExtensionManager(true)}
+                  >
+                    <span>管理扩展</span>
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label>数据管理</Label>
+                <div className="text-sm text-muted-foreground mb-1">
+                  数据存储路径: {settings.dataPath || '获取路径中...'}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={exportAllSettings} variant="outline" size="sm">
+                    导出所有设置
+                  </Button>
+                  <Button onClick={importAllSettings} variant="outline" size="sm">
+                    导入设置
+                  </Button>
+                  <Button onClick={handleResetToDefaults} variant="warning" size="sm">
+                    恢复默认设置
+                  </Button>
+                  <Button
+                    onClick={() => setShowClearDataConfirmDialog(true)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    清除所有数据
+                  </Button>
+                  <Button onClick={openDataDirectory} variant="outline" size="sm">
+                    打开数据目录
+                  </Button>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <Label>应用信息</Label>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>{t('settings.autoCheckUpdates')}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {t('settings.autoCheckUpdatesDescription')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={handleManualUpdateCheck}
+                        title="手动检查更新"
+                        disabled={isCheckingUpdate}
+                      >
+                        <svg
+                          className={`h-4 w-4 ${isCheckingUpdate ? 'animate-spin' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                        >
+                          <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </Button>
+                      <Switch
+                        checked={settings.autoCheckUpdates}
+                        onCheckedChange={(checked) =>
+                          handleSettingChange('autoCheckUpdates', checked)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    <p>Pager: {versionInfo?.appVersion || '加载中...'}</p>
+                    <p>Electron: {versionInfo?.electronVersion || '加载中...'}</p>
+                    <p>Chrome: {versionInfo?.chromeVersion || '加载中...'}</p>
+                    <p>Node.js: {versionInfo?.nodeVersion || '加载中...'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* 调试选项 */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>调试模式</Label>
+                    <p className="text-sm text-muted-foreground">显示高级调试选项</p>
+                  </div>
+                  <Switch
+                    checked={settings.showDebugOptions}
+                    onCheckedChange={(checked) => handleSettingChange('showDebugOptions', checked)}
+                  />
+                </div>
+
+                {settings.showDebugOptions && (
+                  <div className="border-red-500 border-2 rounded-lg p-4 bg-red-50 dark:bg-red-900/20 dark:border-red-700">
+                    <h3 className="text-lg font-semibold mb-2 text-red-700 dark:text-red-300">
+                      调试选项
+                    </h3>
+                    <div className="space-y-2">
+                      <p className="text-red-600 dark:text-red-400 text-sm">
+                        警告：这些选项仅供调试使用，操作可能不可恢复！
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            if (window.api?.window?.openDevTools) {
+                              window.api.window.openDevTools()
+                            } else {
+                              alert('打开开发者工具功能不可用')
+                            }
+                          }}
+                        >
+                          打开开发者工具
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setShowCrashConfirmDialog(true)}
+                          className="relative overflow-hidden"
+                        >
+                          <AlertTriangle className="h-4 w-4 mr-1" />
+                          模拟崩溃
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </OverlayScrollArea>
 
       {/* 扩展管理器对话框 */}
       <Dialog open={showExtensionManager} onOpenChange={setShowExtensionManager}>

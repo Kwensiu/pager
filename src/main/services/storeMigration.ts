@@ -134,7 +134,10 @@ class StoreMigrationService {
     ) {
       // Allow first bridge to override default theme value from localStorage.
       updates.theme = 'dark'
-    } else if (bridgeSettings.theme !== undefined && currentSettings.theme !== bridgeSettings.theme) {
+    } else if (
+      bridgeSettings.theme !== undefined &&
+      currentSettings.theme !== bridgeSettings.theme
+    ) {
       console.log('[StoreMigration] bridge conflict resolved by store priority: settings.theme')
     }
 
@@ -148,11 +151,16 @@ class StoreMigrationService {
       typeof bridgeSettings.sidebarOpen === 'boolean' &&
       currentSidebarOpen !== bridgeSettings.sidebarOpen
     ) {
-      console.log('[StoreMigration] bridge conflict resolved by store priority: settings.sidebarOpen')
+      console.log(
+        '[StoreMigration] bridge conflict resolved by store priority: settings.sidebarOpen'
+      )
     }
 
     const currentLegacyInit = currentSettings.legacyHasInitialized
-    if ((currentLegacyInit === undefined || currentLegacyInit === null) && payload.hasInitialized !== undefined) {
+    if (
+      (currentLegacyInit === undefined || currentLegacyInit === null) &&
+      payload.hasInitialized !== undefined
+    ) {
       updates.legacyHasInitialized = payload.hasInitialized
     }
 

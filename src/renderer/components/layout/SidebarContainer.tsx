@@ -11,7 +11,9 @@ import SidebarHeader from './sidebar/core/SidebarHeader'
 import SidebarContentWithDragDrop from './sidebar/dialogs/SidebarContentWithDragDrop'
 import { AddGroupDialog } from '@/components/features/AddGroupDialog'
 import { useAddGroupDialog } from '@/hooks/useAddGroupDialog'
+import { useSettings } from '@/hooks/useSettings'
 import SettingsDialog from '@/components/features/SettingsDialog'
+import { OverlayScrollArea } from '@/ui/overlay-scroll-area'
 import { PrimaryGroup, SecondaryGroup, Website } from '@/types/website'
 
 /**
@@ -184,6 +186,8 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
   // 子组件
   children
 }) => {
+  const { settings } = useSettings()
+
   // 使用共享的添加分组对话框钩子
   const { handleAddGroup } = useAddGroupDialog({
     dialogMode,
@@ -191,6 +195,9 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
     primaryGroups,
     onGroupsUpdate
   })
+
+  const sidebarScrollbarSize = Math.max(6, Math.min(14, settings.sidebarScrollbarSize ?? 8))
+  const sidebarScrollbarVisibility = settings.sidebarScrollbarVisibility ?? 'hover'
 
   return (
     <div className={`flex h-screen w-full ${isAlwaysOnTop ? 'border-4 border-blue-400/30' : ''}`}>
@@ -209,27 +216,35 @@ const SidebarContainer: React.FC<SidebarContainerProps> = ({
           onDeletePrimaryGroup={handleDeletePrimaryGroup}
         />
         <UISidebarContent
-          className="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40"
+          className="h-full overflow-hidden"
           role="region"
           aria-label="网站分组列表"
           tabIndex={-1}
         >
-          <SidebarContentWithDragDrop
-            activePrimaryGroup={activePrimaryGroup}
-            toggleSecondaryGroup={toggleSecondaryGroup}
-            handleWebsiteClick={handleWebsiteClick}
-            handleAddWebsite={handleAddWebsite}
-            handleWebsiteUpdate={handleWebsiteUpdate}
-            handleDeleteWebsite={handleDeleteWebsite}
-            handleEditSecondaryGroup={handleEditSecondaryGroup}
-            handleDeleteSecondaryGroup={handleDeleteSecondaryGroup}
-            contextMenuSecondaryGroup={contextMenuSecondaryGroup}
-            activeWebsiteId={activeWebsiteId}
-            primaryGroups={primaryGroups}
-            onGroupsUpdate={onGroupsUpdate}
-            onOpenAddOptionsDialog={onOpenAddOptionsDialog}
-            collapsedSidebarMode={collapsedSidebarMode}
-          />
+          <OverlayScrollArea
+            className="h-full"
+            viewportClassName="pr-1"
+            scrollbarSize={sidebarScrollbarSize}
+            scrollbarVisibility={sidebarScrollbarVisibility}
+            thumbClassName="bg-muted-foreground/20 hover:bg-muted-foreground/40"
+          >
+            <SidebarContentWithDragDrop
+              activePrimaryGroup={activePrimaryGroup}
+              toggleSecondaryGroup={toggleSecondaryGroup}
+              handleWebsiteClick={handleWebsiteClick}
+              handleAddWebsite={handleAddWebsite}
+              handleWebsiteUpdate={handleWebsiteUpdate}
+              handleDeleteWebsite={handleDeleteWebsite}
+              handleEditSecondaryGroup={handleEditSecondaryGroup}
+              handleDeleteSecondaryGroup={handleDeleteSecondaryGroup}
+              contextMenuSecondaryGroup={contextMenuSecondaryGroup}
+              activeWebsiteId={activeWebsiteId}
+              primaryGroups={primaryGroups}
+              onGroupsUpdate={onGroupsUpdate}
+              onOpenAddOptionsDialog={onOpenAddOptionsDialog}
+              collapsedSidebarMode={collapsedSidebarMode}
+            />
+          </OverlayScrollArea>
         </UISidebarContent>
         <SidebarFooter className="mt-auto border-t border-border p-2">
           <div className="flex flex-col gap-2">

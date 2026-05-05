@@ -13,6 +13,8 @@ const defaultSettings: Settings = {
   isOpenContextMenu: true,
   leftMenuPosition: 'left',
   howLinkOpenMethod: 'tuboshu',
+  sidebarScrollbarSize: 8,
+  sidebarScrollbarVisibility: 'hover',
   extensionSettings: {
     enableExtensions: true,
     autoLoadExtensions: true,

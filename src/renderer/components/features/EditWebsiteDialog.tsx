@@ -28,19 +28,14 @@ function normalizeUrlInput(rawUrl: string, allowLocalFileAccess: boolean): strin
   ) {
     if (
       allowLocalFileAccess &&
-      (normalizedUrl.includes('\\') ||
-        normalizedUrl.startsWith('/') ||
-        normalizedUrl.includes(':'))
+      (normalizedUrl.includes('\\') || normalizedUrl.startsWith('/') || normalizedUrl.includes(':'))
     ) {
       if (normalizedUrl.includes(':') && !normalizedUrl.startsWith('/')) {
         normalizedUrl = 'file:///' + normalizedUrl.replace(/\\/g, '/').replace(/^C:/i, 'C:')
       } else {
         normalizedUrl = 'file://' + normalizedUrl
       }
-    } else if (
-      normalizedUrl.startsWith('localhost') ||
-      /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)
-    ) {
+    } else if (normalizedUrl.startsWith('localhost') || /^\d+\.\d+\.\d+\.\d+/.test(normalizedUrl)) {
       normalizedUrl = 'http://' + normalizedUrl
     } else {
       normalizedUrl = 'https://' + normalizedUrl
